@@ -22,13 +22,13 @@ unicorn-kb/           ← team KB. This repo.
   ├── codebase-state/ ← fetched via GitHub MCP; as-shipped state of <codebase>/
   └── handoffs/       ← scenario-specific procedures
 
-unicorn-audit/        ← Angela's narrative audit trail. Not team-visible.
+unicorn-audit/        ← Carl's narrative audit trail. Not team-visible.
   └── audits/         ← one markdown file per audit event
 ```
 
 **Why split.** Pinning the full KB to every chat wastes context on content
 most chats don't need. Pinning only the stable opinion layer and fetching
-the rest on demand keeps signal density high. The audit repo is Angela's
+the rest on demand keeps signal density high. The audit repo is Carl's
 tool for recording "what I reconciled, when, why" — it belongs separate
 so it doesn't pollute the team KB.
 
@@ -197,16 +197,16 @@ past-shelf-life citation in a chat, that's the nudge to review.
 
 | Doc | Primary owner |
 |---|---|
-| `README.md`, `pinned/kb-hygiene.md` | Angela |
-| `pinned/orientation.md`, `pinned/team-roles.md` | Angela |
-| `pinned/conventions.md`, `reference/flow-patterns.md` | Angela + RJ (co-owned) |
-| `pinned/decisions.md`, `reference/decision-trail.md`, `reference/migration-1to2.md` | RJ (with Angela's help) |
-| `reference/cadence.md` | Angela |
-| `reference/brainstorm-log.md` | Anyone; curated by Angela |
-| `pinned/glossary.md` | Anyone; curated by Angela |
-| `handoffs/*.md` | Angela |
-| `codebase-state/*` | Regenerated post-remix, reviewed by Angela + RJ |
-| `unicorn-audit/*` | Angela only |
+| `README.md`, `pinned/kb-hygiene.md` | Carl |
+| `pinned/orientation.md`, `pinned/team-roles.md` | Carl |
+| `pinned/conventions.md`, `reference/flow-patterns.md` | Carl + RJ (co-owned) |
+| `pinned/decisions.md`, `reference/decision-trail.md`, `reference/migration-1to2.md` | RJ (with Carl's help) |
+| `reference/cadence.md` | Carl |
+| `reference/brainstorm-log.md` | Anyone; curated by Carl |
+| `pinned/glossary.md` | Anyone; curated by Carl |
+| `handoffs/*.md` | Carl |
+| `codebase-state/*` | Regenerated post-remix, reviewed by Carl + RJ |
+| `unicorn-audit/*` | Carl only |
 
 ### Pruning discipline
 

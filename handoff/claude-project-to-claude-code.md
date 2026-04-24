@@ -6,7 +6,7 @@
 > crystallised, or a change needs to be made. Now you need to carry that out
 > of chat into either the codebase or the KB without losing the context.
 >
-> **Applies to:** Angela, RJ, Khian.
+> **Applies to:** Carl, RJ, Khian.
 
 ---
 
@@ -59,7 +59,7 @@ Read the scope. Correct it if Claude Code misread anything.
 
 ---
 
-## Record in the audit repo (conditional, Angela only)
+## Record in the audit repo (conditional, Carl only)
 
 Open an audit doc if the change:
 - Resolves an Open Decision.

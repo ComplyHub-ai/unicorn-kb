@@ -8,7 +8,7 @@
 > are now suspect until reconciled. `codebase-state/*` is the most affected
 > layer — it describes code that may no longer exist.
 >
-> **Applies to:** Angela only.
+> **Applies to:** Carl only.
 
 ---
 

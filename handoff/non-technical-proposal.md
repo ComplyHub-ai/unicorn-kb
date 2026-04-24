@@ -17,10 +17,10 @@ There is **one designated Claude Project chat thread** used as the KB
 proposal inbox. It's a write-only paste surface — not for conversation,
 not for back-and-forth debate, just for recording proposals.
 
-**Inbox chat thread URL:** _(set by Angela on setup — paste the URL here
+**Inbox chat thread URL:** _(set by Carl on setup — paste the URL here
 once the thread exists, then bookmark it)_
 
-If you aren't sure what the URL is, ask Angela. Don't open a new thread
+If you aren't sure what the URL is, ask Carl. Don't open a new thread
 for proposals — one inbox is the point.
 
 ---
@@ -34,9 +34,9 @@ Use this format. One proposal per paste.
 Proposed change: <one sentence — what should be different>
 Why: <one or two sentences — what problem this solves>
 Which file: <best guess at the KB file, or "not sure">
-Context: <anything else Angela needs to make the call — links,
+Context: <anything else Carl needs to make the call — links,
           screenshots description, quotes, examples>
-Your name: <so Angela can follow up if it's unclear>
+Your name: <so Carl can follow up if it's unclear>
 ```
 
 Example:
@@ -55,17 +55,17 @@ Your name: Jane
 
 ## What happens next
 
-Angela checks the inbox thread on her review cadence (ad-hoc, see
+Carl checks the inbox thread on her review cadence (ad-hoc, see
 `pinned/kb-hygiene.md → Review cadence`). For each proposal:
 
-1. If the change is clear and right → Angela opens a PR against
+1. If the change is clear and right → Carl opens a PR against
    `unicorn-kb/` with the change + your proposal quoted in the PR
    description, merges, done.
-2. If the change needs discussion → Angela replies in the inbox thread
+2. If the change needs discussion → Carl replies in the inbox thread
    with a link to wherever the discussion moves (a separate thread, a
    meeting agenda item, etc.).
 3. If the change is already covered, contradicts an existing decision, or
-   doesn't belong in the KB → Angela replies in the inbox thread
+   doesn't belong in the KB → Carl replies in the inbox thread
    explaining why. Nothing is silently rejected.
 
 You'll see the reply in the inbox thread. You don't need to track PRs or
@@ -95,8 +95,8 @@ commits.
 
 ## Inbox hygiene
 
-Angela archives or clears the inbox thread periodically — old replied-to
+Carl archives or clears the inbox thread periodically — old replied-to
 proposals can be removed, thread can be reset if it gets long. Replies
 stay long enough for the proposer to see them, not forever. If you need
-a permanent record of something proposed here, the PR Angela opens from
+a permanent record of something proposed here, the PR Carl opens from
 your proposal is the permanent record.

@@ -38,7 +38,7 @@ layer 2 is what the team thinks; layer 3 is what got built.
 | `unicorn-kb/reference/` vs `unicorn-kb/codebase-state/` | `codebase-state/` (closer to code); divergence is likely an ADR that didn't ship as planned |
 | Any KB layer vs actual `<codebase>/` code | Code. Always. |
 | `codebase-state/` vs actual `<codebase>/` code | Code. `codebase-state/` may be stale between remixes. |
-| Two pinned files disagree | Bug in the KB. Flag to Angela. |
+| Two pinned files disagree | Bug in the KB. Flag to Carl. |
 
 When the code wins over any KB layer, Claude must:
 1. Answer from the code.

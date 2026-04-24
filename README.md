@@ -7,7 +7,7 @@ repo is one of three that work together:
 |---|---|---|
 | `<codebase>/` | The actual codebase. Lovable builds here. | Yes |
 | `unicorn-kb/` | This repo. Team opinion, decisions, patterns, handoffs, and as-shipped state docs. | No |
-| `unicorn-audit/` | Angela's audit trail — narrative record of reconciliations. | No |
+| `unicorn-audit/` | Carl's audit trail — narrative record of reconciliations. | No |
 
 ## Folder structure
 
@@ -57,7 +57,7 @@ Full rules in [reference/source-precedence.md](reference/source-precedence.md).
 - Codebase state (module status, codebase map, architecture) → PR against
   `unicorn-kb/codebase-state/`; full regeneration after a Lovable remix,
   surgical edits per feature ship.
-- Audit narrative → `unicorn-audit/` (Angela only).
+- Audit narrative → `unicorn-audit/` (Carl only).
 - Non-git stakeholders → paste into the designated Claude Project inbox
   thread; see [handoffs/non-technical-proposal.md](handoffs/non-technical-proposal.md).
 
