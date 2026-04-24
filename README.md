@@ -5,7 +5,7 @@ repo is one of three that work together:
 
 | Repo | Purpose | Lovable sees |
 |---|---|---|
-| `unicorn/` | The actual codebase. Lovable builds here. | Yes |
+| `<codebase>/` | The actual codebase. Lovable builds here. | Yes |
 | `unicorn-kb/` | This repo. Team opinion, decisions, patterns, handoffs, and as-shipped state docs. | No |
 | `unicorn-audit/` | Angela's audit trail — narrative record of reconciliations. | No |
 
@@ -27,11 +27,11 @@ context without a fetch.
 cadence, migration history. Fetched via GitHub MCP on demand because the
 cost-per-token of keeping them pinned isn't worth it.
 
-**Codebase-state files** describe the shipped `unicorn/` codebase — what's
+**Codebase-state files** describe the shipped `<codebase>/` codebase — what's
 built, where things live, as-shipped architecture. They live here (not in
-`unicorn/`) so Lovable doesn't have to reason about files it didn't create.
+`<codebase>/`) so Lovable doesn't have to reason about files it didn't create.
 Every file in this folder carries a **Reflects commit** SHA pointing at the
-`unicorn/` HEAD it was generated from. Regeneration ritual lives in
+`<codebase>/` HEAD it was generated from. Regeneration ritual lives in
 [handoffs/post-lovable-remix.md](handoffs/post-lovable-remix.md).
 
 **Handoff files** are role- and scenario-specific procedures — e.g. "I just
@@ -45,7 +45,7 @@ The Claude Project's custom instructions encode, in order:
 1. Pinned KB (always in context)
 2. `unicorn-kb/reference/` + `unicorn-kb/handoffs/` via GitHub MCP
 3. `unicorn-kb/codebase-state/` via GitHub MCP
-4. `unicorn/` source code via GitHub MCP
+4. `<codebase>/` source code via GitHub MCP
 5. Inference (flagged with "Inferring from …")
 
 When any KB layer and the actual codebase disagree, the codebase wins.
@@ -67,7 +67,7 @@ shelf life, review cadence, and what never goes in.
 ## What's NOT here
 
 - Secrets, API keys, Supabase service-role keys, Stripe keys (never).
-- Raw migration SQL — points to `supabase/migrations/` in `unicorn/`.
-- Lovable preview URLs / project IDs beyond what's in `unicorn/supabase/config.toml`.
+- Raw migration SQL — points to `supabase/migrations/` in `<codebase>/`.
+- Lovable preview URLs / project IDs beyond what's in `<codebase>/supabase/config.toml`.
 - Personal identifying info about clients beyond role names.
-- The product spec (EOS) — lives in `unicorn/` or wherever the spec canonically lives.
+- The product spec (EOS) — lives in `<codebase>/` or wherever the spec canonically lives.

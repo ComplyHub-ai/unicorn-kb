@@ -3,7 +3,7 @@
 > **Last updated:** 2026-04-23 · **Reconsider by:** 2026-06-23 · **Confidence:** medium — tenant ID and docs table updated April 2026 audit; file moves/renames will desync this file fastest of any in the KB.
 >
 > A navigational reference. Where to find things, what depends on what, and the mental path for common tasks.
-> Paths are relative to the repo root (`c:/Users/carls/repository/unicorn-cms-f09c59e5`).
+> Paths are relative to the repo root (`~/repository/unicorn-workspace/<codebase>` — alias defined in workspace root `CLAUDE.md`).
 
 ---
 

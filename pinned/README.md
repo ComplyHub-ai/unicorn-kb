@@ -5,7 +5,7 @@ is one of three that work together:
 
 | Repo | Purpose | Lovable sees |
 |---|---|---|
-| `unicorn/` | The actual codebase. Lovable builds here. | Yes |
+| `<codebase>/` | The actual codebase. Lovable builds here. | Yes |
 | `unicorn-kb/` | This repo. Team opinion, decisions, patterns, handoffs. | No |
 | `unicorn-audit/` | Angela's audit trail — narrative record of reconciliations. | No |
 
@@ -34,7 +34,7 @@ finished a Claude Code session, what goes back to the KB?" Start at
 
 The Claude Project's custom instructions encode:
 
-1. Pinned KB → 2. `unicorn-kb/` via GitHub MCP → 3. `unicorn/` via GitHub MCP
+1. Pinned KB → 2. `unicorn-kb/` via GitHub MCP → 3. `<codebase>/` via GitHub MCP
 → 4. inference (flagged).
 
 When pinned KB and the repo disagree, the repo wins.
@@ -42,8 +42,8 @@ When pinned KB and the repo disagree, the repo wins.
 ## How to update
 
 - Conventions, decisions, patterns → PR against `unicorn-kb/` on a branch.
-- Module status / codebase map / as-shipped architecture → `unicorn/docs/`,
-  lives with the code.
+- Module status / codebase map / as-shipped architecture → `unicorn-kb/codebase-state/`,
+  lives in the KB (not in the codebase repo — Lovable shouldn't touch these files).
 - Audit narrative → `unicorn-audit/` (Angela only).
 - Non-git stakeholders → paste into the designated Claude Project inbox
   thread; see [handoffs/non-technical-proposal.md](handoffs/non-technical-proposal.md).

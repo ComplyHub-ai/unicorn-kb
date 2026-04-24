@@ -27,7 +27,7 @@
 | Claude Code | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | GitHub MCP (read) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | GitHub MCP (PR write) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `unicorn/` commit access | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `<codebase>/` commit access | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `unicorn-kb/` commit access | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `unicorn-audit/` access | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Lovable | ✅ | ✅ | ? | ? | ? | ❌ |

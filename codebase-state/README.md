@@ -1,7 +1,7 @@
 # Codebase State
 
-> As-shipped description of the `unicorn/` codebase. Lives in `unicorn-kb/`
-> (not in `unicorn/`) because Lovable controls `unicorn/` and shouldn't
+> As-shipped description of the `<codebase>/` codebase. Lives in `unicorn-kb/`
+> (not in `<codebase>/`) because Lovable controls `<codebase>/` and shouldn't
 > have to reason about files it didn't create.
 
 ---
@@ -25,11 +25,11 @@ In addition to the standard shelf-life header, every `codebase-state/*.md`
 file carries:
 
 ```markdown
-> **Reflects commit:** unicorn@<sha> (YYYY-MM-DD)
+> **Reflects commit:** <codebase>@<sha> (YYYY-MM-DD)
 ```
 
 This is what makes staleness detectable. Before trusting any answer
-sourced from `codebase-state/`, compare this SHA to current `unicorn/`
+sourced from `codebase-state/`, compare this SHA to current `<codebase>/`
 HEAD. See [../reference/source-precedence.md](../reference/source-precedence.md).
 
 ---
@@ -50,7 +50,7 @@ HEAD. See [../reference/source-precedence.md](../reference/source-precedence.md)
 - Team opinion, conventions, decisions — those live in `../pinned/` and
   `../reference/`.
 - Flow patterns, ADRs, migration maps — also `../reference/`.
-- The product spec (EOS) — lives in the `unicorn/` codebase or wherever
+- The product spec (EOS) — lives in the `<codebase>/` codebase or wherever
   the spec canonically lives.
 
 These docs answer "what *is* the shipped code", not "how should we
