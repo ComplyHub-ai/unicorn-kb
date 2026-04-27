@@ -1,6 +1,8 @@
 # Codebase Map
 
-> **Last updated:** 2026-04-23 · **Reconsider by:** 2026-06-23 · **Confidence:** medium — tenant ID and docs table updated April 2026 audit; file moves/renames will desync this file fastest of any in the KB.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-06-27 · **Confidence:** medium — tenant ID and docs table updated April 2026 audit; file moves/renames will desync this file fastest of any in the KB.
+>
+> **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25)
 >
 > A navigational reference. Where to find things, what depends on what, and the mental path for common tasks.
 > Paths are relative to the repo root (`~/repository/unicorn-workspace/<codebase>` — alias defined in workspace root `CLAUDE.md`).
@@ -26,7 +28,7 @@ unicorn-cms-f09c59e5/
 │   └── test/                         # Test utilities
 ├── supabase/                         # Backend: edge functions, migrations, email templates
 │   ├── functions/                    # 117 edge functions
-│   ├── migrations/                   # 894 migrations
+│   ├── migrations/                   # 895 migrations
 │   └── email-templates/              # Auth email templates
 ├── sql-setup/                        # Seed SQL (12 files incl. resource hub schema)
 ├── docs/                             # Product specs + integration docs
@@ -140,7 +142,9 @@ The largest subtree. Rock/Issue/Todo forms, V/TO editor, Scorecard editor, Meeti
 - `eos/qc/` — quarterly conversation flow
 
 **Audit** — [src/components/audit/](../src/components/audit/)
-Inspection dialogs, finding / action editors, report rendering.
+Inspection dialogs, finding / action editors, report rendering, plus a substantial workspace subtree:
+- `audit/workspace/` (~24 files) — tabbed shell (`OverviewTab`, `ScheduleTab`, `AuditFormTab`, `FindingsTab`, `ActionsTab`, `DocumentsTab`, `ReportTab`, `AuditSidebar`, `AuditSummaryPills`, `PhaseStepIndicator`); three lifecycle phases (`OpeningMeetingPhase`, `DocumentReviewPhase`, `ClosingMeetingPhase`); drawers and dialogs (`ActionDrawer`, `VerificationDrawer`, `SendEvidenceRequestDrawer`, `SendPreliminarySummaryDialog`, `AddFindingForm`, `AppointmentPanel`, `EvidenceRequestsSection`, `QuestionCard`); autosave plumbing (`UnsavedAuditWorkContext.tsx` + `useDebouncedAutosave.ts`).
+- `audit/AuditRiskBadge.tsx` — risk-rating badge surfaced across workspace tabs.
 
 **Dashboard** — [src/components/dashboard/](../src/components/dashboard/)
 Stats cards, charts, week-tasks table.
@@ -155,7 +159,7 @@ Stats cards, charts, week-tasks table.
 |---|---|
 | [useAuth.tsx](../src/hooks/useAuth.tsx) | Session + profile; `AuthProvider` context |
 | useAISuggestions | Wraps `ai-generate-suggestions` edge function |
-| useAudits, useAuditTemplates, useReusableAuditTemplates | Audits domain |
+| useAudits, useClientAudits, useClientAuditPortal, useAuditWorkspace, useAuditTemplates, useReusableAuditTemplates, useAuditPrep, useAuditSchedule, useAuditScheduler, useAuditActionPlan, useAuditReferences, useAuditReport, useComplianceAudits, useEngagementAudit, useDocumentSyncAudit, useStageAuditLink, useStageAuditLog, useUserAudit | Audits domain (17 hooks). `useClientAudits` and `useAuditWorkspace` carry the workspace-page reads/writes; mutations go direct against `client_audits` / related tables (no edge function). |
 | useDashboardData | Dashboard aggregates |
 | useEos | Top-level EOS data |
 | useEosAgendaTemplates, useEosDrafts, useEosHeadlines, useEosMeetingRecurrences, useEosMeetingSegments, useEosScorecardEntries, useEosScorecardMetrics | EOS subdomain hooks |
@@ -177,6 +181,8 @@ Stats cards, charts, week-tasks table.
 ### Types — [src/types/](../src/types/)
 
 - [audit.ts](../src/types/audit.ts) — Audit domain types
+- [auditWorkspace.ts](../src/types/auditWorkspace.ts) — Workspace-specific types (tabs, phases, autosave payloads)
+- [auditReferences.ts](../src/types/auditReferences.ts) — Reference / evidence types
 - [eos.ts](../src/types/eos.ts) — EOS domain types
 - [qc.ts](../src/types/qc.ts) — Quarterly Conversation types
 
@@ -185,6 +191,7 @@ Stats cards, charts, week-tasks table.
 ### Lib — [src/lib/](../src/lib/)
 
 - [utils.ts](../src/lib/utils.ts) — `cn()` helper (Tailwind class merging) + misc utilities.
+- [buildPreliminaryAuditSummary.ts](../src/lib/buildPreliminaryAuditSummary.ts) — composes the preliminary-audit summary email body (used by `audit/workspace/SendPreliminarySummaryDialog.tsx`); also calculates audit completion %.
 
 ### Config — [src/config/](../src/config/)
 
@@ -221,7 +228,7 @@ Key navigational landmarks:
 
 ### Migrations — [supabase/migrations/](../supabase/migrations/)
 
-894 migrations. Timestamped filenames. Most recent: Apr 21, 2026.
+895 migrations. Timestamped filenames. Most recent: 2026-04-23 (`20260423093423_…` — `fn_package_stream` + duplicate-package guard in `start_client_package`).
 
 ### Email templates — [supabase/email-templates/](../supabase/email-templates/)
 

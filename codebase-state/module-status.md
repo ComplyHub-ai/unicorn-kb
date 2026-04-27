@@ -1,6 +1,8 @@
 # Module Status
 
-> **Last updated:** 2026-04-22 · **Reconsider by:** 2026-05-22 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-05-27 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
+>
+> **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25)
 >
 > Live tracker for each module. Grounded in the actual `unicorn-cms-f09c59e5` codebase (April 2026). Many features previously flagged as "historical reference only" are now present in this codebase.
 
@@ -83,33 +85,42 @@
 
 ## 4. Audits & Assessments
 
-**Status:** 🟡 Shipped, simpler than old-doc version
+**Status:** 🟡 Workspace heavily expanded April 2026; backend still client-side direct DB
 
 **What exists:**
 - Audit templates ([sql-setup/05-audit-schema.sql](../sql-setup/05-audit-schema.sql), `/audits/create-template`)
 - Question bank seed (395 questions, 91 sections, 5 templates — [sql-setup/08-audit-question-bank-seed.sql](../sql-setup/08-audit-question-bank-seed.sql))
-- Audit workspace (`/audits/:id`)
+- Audit workspace (`/audits/:id`) — built on [src/pages/AuditWorkspaceNew.tsx](../src/pages/AuditWorkspaceNew.tsx)
 - Findings (`/audits/:id/findings`)
 - Corrective actions (`/audits/:id/actions`)
 - Report view (`/audits/:id/report`)
 - RLS hardening ([sql-setup/06-audit-rls-policies.sql](../sql-setup/06-audit-rls-policies.sql))
 - RPC functions ([sql-setup/07-audit-rpc-functions.sql](../sql-setup/07-audit-rpc-functions.sql))
 
-**Now present in this codebase:**
-- `analyze-document` edge function — ✅ exists
-- `research-audit-intelligence` edge function — ✅ exists
-- `research-evidence-gap-check` / `research-template-gap-analysis` — ✅ exist
-- `scan-document` / `chunk-document` pipeline — ✅ exists
-- New page: `AuditWorkspaceNew.tsx` — may indicate the three-phase lifecycle is in progress
+**Workspace surface (`src/components/audit/workspace/`, ~24 files):**
+- Tabbed shell — `OverviewTab`, `ScheduleTab`, `AuditFormTab`, `FindingsTab`, `ActionsTab`, `DocumentsTab`, `ReportTab` + `AuditSidebar`, `AuditSummaryPills`, `PhaseStepIndicator`
+- **Three-phase lifecycle confirmed present** — `OpeningMeetingPhase.tsx`, `DocumentReviewPhase.tsx`, `ClosingMeetingPhase.tsx` (so the previous "verify with RJ" item is closed). Phase order: Opening → Document Review → Closing.
+- Drawers / dialogs — `ActionDrawer`, `VerificationDrawer`, `SendEvidenceRequestDrawer`, `SendPreliminarySummaryDialog`, `AddFindingForm`, `AppointmentPanel`, `EvidenceRequestsSection`, `QuestionCard`
+- **Autosave infrastructure (`a0dccf19`, 2026-04-23)** — `UnsavedAuditWorkContext.tsx` provider + `useDebouncedAutosave.ts` hook; replaces an earlier per-component save path that was dropping data on phase switch. If you're touching workspace fields, write through the context, not direct mutations.
+- **Preliminary audit summary (`72ae466e`, `c337d624`, 2026-04-24)** — `SendPreliminarySummaryDialog` + helper `src/lib/buildPreliminaryAuditSummary.ts`; calculates audit completion % for the email body.
+- **Risk rating UI (`cf8d1314`, 2026-04-25)** — `src/components/audit/AuditRiskBadge.tsx`; risk fields surfaced in `OverviewTab`, `FindingsTab`, `ActionsTab`, `AuditSummaryPills`.
+
+**Audit hooks (`src/hooks/`, 17 files):** `useAudits`, `useClientAudits`, `useClientAuditPortal`, `useAuditWorkspace`, `useAuditTemplates`, `useReusableAuditTemplates`, `useAuditPrep`, `useAuditSchedule`, `useAuditScheduler`, `useAuditActionPlan`, `useAuditReferences`, `useAuditReport`, `useComplianceAudits`, `useEngagementAudit`, `useDocumentSyncAudit`, `useStageAuditLink`, `useStageAuditLog` (+ `useUserAudit` for user-action audit log).
+
+**Audit types:** [src/types/audit.ts](../src/types/audit.ts), [src/types/auditWorkspace.ts](../src/types/auditWorkspace.ts), [src/types/auditReferences.ts](../src/types/auditReferences.ts).
+
+**Backend reality:**
+- **No dedicated audit edge function.** Audit creation, save, and finding mutations all happen via the Supabase JS client direct against `client_audits` / related tables from `useClientAudits.ts` and `useAuditWorkspace.ts`. A `create-client-audit` Edge Function was added on 2026-04-20 (`65c426aa`) and **reverted the same day** (`084a5e17`); it is not at HEAD. If a server-side audit pipeline is wanted, this is greenfield again.
+- AI-adjacent functions still in place: `analyze-document`, `research-audit-intelligence`, `research-evidence-gap-check`, `research-template-gap-analysis`, `scan-document` / `chunk-document` pipeline.
+- **No new audit-related migration in the past week.** All three migrations dated 2026-04-21 / 04-23 are Academy or Packages, not audit (see sections 5 and 16).
 
 **Still not confirmed in codebase:**
 - `generate-audit-report` — not found; confirm with RJ
-- Three-phase workflow (Preparation / Conducting / Closing) with auto-completion — verify
-- `audit_appointments` scheduling table — verify in DB
+- `audit_appointments` scheduling table — `AppointmentPanel.tsx` and `useAuditScheduler.ts` exist, suggesting the table is present, but not verified directly
 
 **Remaining:**
 - AI report generation — verify scope
-- Three-phase lifecycle — verify scope
+- Server-side audit creation / mutation pipeline — would replace current direct-DB pattern
 - Client portal audit views — partial; confirm scope
 
 ---
@@ -124,6 +135,7 @@
 - Tenant view (`/manage-packages`, `/package/:id`)
 - Stages management (`/manage-stages`)
 - `add-missing-packages` edge function — ensures default packages per tenant
+- **Duplicate-package guard (`1ce4b026`, 2026-04-23)** — `start_client_package` RPC now refuses to add a package of the same regulatory stream (RTO / CRICOS / GTO / generic) a tenant already has. New helper `fn_package_stream(p_package_id)` derives the stream from the package name/slug. Migration: `supabase/migrations/20260423093423_781c87e1-…sql`.
 
 **Remaining:**
 - Pipeline automation / auto-stage-moves — old docs reference DB-trigger-based stage completion. Not yet evident here. Clarify scope.
@@ -312,6 +324,13 @@
 - Hooks (`src/hooks/academy/`): `useAcademyCourses`, `useAcademyEnrollments`, `useAcademyCertificates`, `useAcademyPackageRules`, `useTenantAcademyAccess`, `useVideoLibrary`, builder hooks
 - Edge function: `academy-ai-generate`
 - Total: ~30 page/wrapper files, 22 components, 9+ hooks
+
+**Admin tooling overhaul (`faafacb2`, 2026-04-21):**
+- `src/components/academy/admin/EnrolmentProgressDrawer.tsx` (large rewrite — +454 lines), `src/components/academy/admin/NewEnrolmentModal.tsx` (new), `src/pages/superadmin/AcademyEnrolmentsPage.tsx` (significantly expanded), `src/hooks/academy/useAcademyEnrollments.ts` (expanded).
+- Backed by new staff-only Postgres RPCs (Vivacity-gated via `is_vivacity()`):
+  - `fn_academy_enrollment_stats()` — six-tile dashboard counts (total, active, completed, expired, revoked, auto-lifetime). Migration: `supabase/migrations/20260421085406_b2a157f8-…sql`.
+  - `fn_academy_enrollment_lesson_detail(p_enrollment_id)` — per-enrolment lesson progress. Same migration.
+  - `fn_academy_rule_dashboard_stats()` — package-rule dashboard tiles (active rules, total mappings, auto-enrolments to date, unmapped packages). Migration: `supabase/migrations/20260421082533_da37ce62-…sql`.
 
 **Remaining:**
 - No `docs/` spec — verify course content schema and role-gate logic with RJ
