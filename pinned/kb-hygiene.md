@@ -1,6 +1,6 @@
 # KB Hygiene
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** high (meta-doc).
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-10-28 · **Confidence:** high (meta-doc).
 >
 > How to keep this knowledge base useful over time. Applies to both the KB
 > itself and the team maintaining it.
@@ -13,8 +13,12 @@ Three git repos carry Unicorn 2.0's knowledge and code. Each has one job.
 
 ```
 <codebase>/            ← codebase. Lovable owns this. Don't hand-edit.
-                        No /docs folder — Lovable shouldn't have to reason
-                        about files it didn't create.
+  └── docs/            ← in-codebase product/feature docs that Lovable reads
+                        and updates as it ships features (specs, naming
+                        conventions, integration notes, smoke tests). NOT
+                        a substitute for unicorn-kb/ — the KB owns
+                        team opinion, decisions, and patterns; <codebase>/docs/
+                        owns code-adjacent reference Lovable needs in-context.
 
 unicorn-kb/           ← team KB. This repo.
   ├── pinned/         ← uploaded to Claude Project (always in context)
@@ -37,6 +41,20 @@ controls `<codebase>/`. Dropping docs into that repo risks Lovable editing,
 deleting, or referencing them incorrectly. Keeping them in `unicorn-kb/`
 keeps Lovable out of the loop, at the cost of a regeneration ritual
 whenever the codebase changes (see `../handoffs/post-lovable-remix.md`).
+
+**`<codebase>/docs/` vs `unicorn-kb/` — which owns what.** A `docs/` folder
+exists in `<codebase>/` for material Lovable needs to reason about while
+generating code — feature specs, naming conventions, API integration
+references, UI smoke tests. The KB does not duplicate those. The KB owns
+team opinion (conventions, ADRs, brainstorm-log), decisions, and as-shipped
+descriptions (codebase-state). When in doubt: if Lovable benefits from
+reading it during a prompt, it goes in `<codebase>/docs/`; if it would
+distract Lovable or only humans/Carl care, it goes in `unicorn-kb/`.
+
+Slice 2 of the Clean Architecture refactor (see
+`reference/clean-architecture-refactor.md`) proposes adding
+`<codebase>/src/ARCHITECTURE.md` for exactly this reason — Lovable needs
+the rule in-context to follow it.
 
 ---
 
@@ -73,6 +91,7 @@ One fact lives in one place. Duplicates are bugs.
 | End-to-end flow patterns | `reference/flow-patterns.md` |
 | Raw unresolved thinking | `reference/brainstorm-log.md` |
 | Engineering cadence / roadmap | `reference/cadence.md` |
+| Active refactor proposals | `reference/clean-architecture-refactor.md` (and future siblings) |
 | Unicorn 1.0 → 2.0 mapping | `reference/migration-1to2.md` |
 | Source precedence rules | `reference/source-precedence.md` |
 | Handoff rituals | `handoffs/*.md` |

@@ -208,7 +208,7 @@ const isVivacityStaff = profile?.tenant_id === VIVACITY_TENANT_ID;
 const isSuperAdmin = profile?.unicorn_role === 'Super Admin';
 ```
 
-Do not duplicate this logic per-component — put role checks in a hook or util if they appear more than twice.
+Do not duplicate this logic per-component — put role checks in a hook or util if they appear more than twice. (Forward note: the Clean Architecture refactor — see `reference/clean-architecture-refactor.md` — proposes consolidating these in `src/domain/access/can.ts`. New role checks should follow that target shape where practical.)
 
 ---
 
