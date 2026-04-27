@@ -17,7 +17,7 @@
 **Who it replaces:**
 - Unicorn 1.0 / legacy Vivacity CMS (internal CRM)
 - Keap (contacts, pipeline, campaign automation)
-- OnceHub (booking — partially superseded, see [07-migration-map.md](07-migration-map.md))
+- OnceHub (booking — partially superseded, see [migration-1to2.md](../reference/migration-1to2.md))
 - Ad-hoc spreadsheets for EOS meeting tracking
 
 **What is novel about 2.0:** EOS Level 10 Meeting methodology is a **first-class product surface**, not a bolt-on. V/TO, Rocks, Scorecard, Issues (IDS), To-Dos, Accountability Chart, live real-time meetings, Quarterly Conversations (QC) — all live. See [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md) for the authoritative product spec.
@@ -49,10 +49,10 @@ Every business-domain row has a `tenant_id`. Tenant `6372` is Vivacity — staff
 - **Admin / consultant surface** — Vivacity staff views (`/manage-*`, `/tenant/:id/*`, `/admin/*`, `/eos/*`, `/audits/*`)
 - **Client surface** — client RTO views (`/client/eos`, tenant-scoped documents, their own tasks)
 
-They share components but render different data based on `unicorn_role` + `tenant_id`. See [03-flow-patterns.md](03-flow-patterns.md#role-aware-rendering).
+They share components but render different data based on `unicorn_role` + `tenant_id`. See [flow-patterns.md](../reference/flow-patterns.md#role-aware-rendering).
 
 ### 3. RLS is the security boundary
-All tenant isolation happens at the database layer via Postgres RLS. The frontend never enforces access control — it reads what RLS lets it read. This is non-negotiable. See [02-system-design.md](02-system-design.md#rls) and [06-decision-trail.md](06-decision-trail.md#adr-005) for the failure modes that make this rule hard.
+All tenant isolation happens at the database layer via Postgres RLS. The frontend never enforces access control — it reads what RLS lets it read. This is non-negotiable. See [conventions.md](conventions.md#rls) and [decision-trail.md](../reference/decision-trail.md#adr-005) for the failure modes that make this rule hard.
 
 Helper functions (Postgres):
 - `is_vivacity()` → true if current user belongs to tenant 6372
@@ -76,17 +76,17 @@ Helper functions (Postgres):
 | EOS spec | [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md) |
 | Invite error codes | [docs/INVITE_USER_DIAGNOSTICS.md](../docs/INVITE_USER_DIAGNOSTICS.md) |
 
-Full navigational map: [11-codebase-map.md](11-codebase-map.md).
+Full navigational map: [codebase-map.md](../codebase-state/codebase-map.md).
 
 ---
 
 ## Ground rules (non-negotiable)
 
 1. **AI logic → server only.** Never in the frontend. Edge Functions or n8n.
-2. **New tables require the three-step RLS ritual.** Tenant-read SELECT policy + staff ALL policy + `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`. Skipping any one is a silent failure. See [02-system-design.md](02-system-design.md#new-table-checklist).
+2. **New tables require the three-step RLS ritual.** Tenant-read SELECT policy + staff ALL policy + `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`. Skipping any one is a silent failure. See [conventions.md](conventions.md#new-table-checklist).
 3. **Lovable never owns schema.** It scaffolds UI only. If Lovable suggests a table, ignore it — schema goes through the senior dev and RJ.
 4. **Edge functions validate the caller manually.** Always `supabase.auth.getUser(callerToken)` then check `unicorn_role` / `tenant_id`. The service-role key bypasses RLS, so the function is the only enforcement point.
-5. **Column defaults are not enough.** For NOT NULL columns the frontend may explicitly set to `NULL`, add a coercion trigger. See [06-decision-trail.md](06-decision-trail.md#adr-008).
+5. **Column defaults are not enough.** For NOT NULL columns the frontend may explicitly set to `NULL`, add a coercion trigger. See [decision-trail.md](../reference/decision-trail.md#adr-008).
 
 ---
 
@@ -103,37 +103,37 @@ Full navigational map: [11-codebase-map.md](11-codebase-map.md).
 
 ## What's live (April 2026) — `unicorn-cms-f09c59e5`
 
-**EOS Level 10 Meeting module** — The flagship. Implements EOS methodology end-to-end: V/TO, Rocks, Scorecard, Issues (IDS), To-Dos, live multi-participant Level 10 Meetings, Quarterly Conversations, and a filtered client-facing view. See [04-module-status.md#3-eos-level-10-meeting-module](04-module-status.md#3-eos-level-10-meeting-module) for build status.
+**EOS Level 10 Meeting module** — The flagship. Implements EOS methodology end-to-end: V/TO, Rocks, Scorecard, Issues (IDS), To-Dos, live multi-participant Level 10 Meetings, Quarterly Conversations, and a filtered client-facing view. See [module-status.md#3-eos-level-10-meeting-module](../codebase-state/module-status.md#3-eos-level-10-meeting-module) for build status.
 
-**Audits module** — Runs Vivacity's compliance audit engagements (CHC, Mock, CRICOS, Due Diligence) against a 395-question bank; staff log findings, assign corrective actions, and generate reports with AI-assisted document analysis. See [04-module-status.md#4-audits--assessments](04-module-status.md#4-audits--assessments) for build status.
+**Audits module** — Runs Vivacity's compliance audit engagements (CHC, Mock, CRICOS, Due Diligence) against a 395-question bank; staff log findings, assign corrective actions, and generate reports with AI-assisted document analysis. See [module-status.md#4-audits--assessments](../codebase-state/module-status.md#4-audits--assessments) for build status.
 
-**Multi-tenant user management** — Invite, role-assign, and manage users within any tenant. Covers the full invite-to-onboard flow, Super Admin password resets, and bulk actions across Vivacity and client roles. See [04-module-status.md#1-auth--user-management](04-module-status.md#1-auth--user-management) for build status.
+**Multi-tenant user management** — Invite, role-assign, and manage users within any tenant. Covers the full invite-to-onboard flow, Super Admin password resets, and bulk actions across Vivacity and client roles. See [module-status.md#1-auth--user-management](../codebase-state/module-status.md#1-auth--user-management) for build status.
 
-**Tenant / client management** — Vivacity staff workspace for each client RTO: details, team members, documents, notes, tasks, engagement timeline, and impact metrics in one place. See [04-module-status.md#2-tenants--multi-tenancy](04-module-status.md#2-tenants--multi-tenancy) for build status.
+**Tenant / client management** — Vivacity staff workspace for each client RTO: details, team members, documents, notes, tasks, engagement timeline, and impact metrics in one place. See [module-status.md#2-tenants--multi-tenancy](../codebase-state/module-status.md#2-tenants--multi-tenancy) for build status.
 
-**Package / pipeline stages** — Models Vivacity's service offerings as Packages with ordered stages; tracks each client's stage-instance progress with a health monitor and phase-completeness calculator. See [04-module-status.md#5-packages--pipeline-stages](04-module-status.md#5-packages--pipeline-stages) for build status.
+**Package / pipeline stages** — Models Vivacity's service offerings as Packages with ordered stages; tracks each client's stage-instance progress with a health monitor and phase-completeness calculator. See [module-status.md#5-packages--pipeline-stages](../codebase-state/module-status.md#5-packages--pipeline-stages) for build status.
 
-**Outlook calendar sync + addin suite** — Syncs EOS meeting events to Microsoft Outlook; the addin functions let staff capture emails, log meeting notes, and draft time entries without leaving Outlook. See [04-module-status.md#15-integrations](04-module-status.md#15-integrations) for build status.
+**Outlook calendar sync + addin suite** — Syncs EOS meeting events to Microsoft Outlook; the addin functions let staff capture emails, log meeting notes, and draft time entries without leaving Outlook. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
 
-**SharePoint integration** — Browse a client's SharePoint, import or link documents into Unicorn, and provision structured SharePoint folders for new clients. See [04-module-status.md#15-integrations](04-module-status.md#15-integrations) for build status.
+**SharePoint integration** — Browse a client's SharePoint, import or link documents into Unicorn, and provision structured SharePoint folders for new clients. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
 
-**Microsoft 365 / Graph email** — Sends pipeline stage and consultant-composed emails via Microsoft Graph (bypassing Mailgun), and provisions M365 accounts for new client users. See [04-module-status.md#15-integrations](04-module-status.md#15-integrations) for build status.
+**Microsoft 365 / Graph email** — Sends pipeline stage and consultant-composed emails via Microsoft Graph (bypassing Mailgun), and provisions M365 accounts for new client users. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
 
-**ClickUp integration** — Bidirectional task and time sync between Unicorn and ClickUp, plus bulk CSV import for migrating ClickUp-heavy clients. See [04-module-status.md#15-integrations](04-module-status.md#15-integrations) for build status.
+**ClickUp integration** — Bidirectional task and time sync between Unicorn and ClickUp, plus bulk CSV import for migrating ClickUp-heavy clients. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
 
-**TGA / training.gov.au integration** — Queries the national training register to search, import, and keep RTO organisational records current — used at client onboarding and during compliance engagements. See [04-module-status.md#15-integrations](04-module-status.md#15-integrations) for build status.
+**TGA / training.gov.au integration** — Queries the national training register to search, import, and keep RTO organisational records current — used at client onboarding and during compliance engagements. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
 
-**AI layer** — 40+ server-side functions routed through a central `ai-orchestrator`: compliance assistant chat, document analysis, vector knowledge search, research intelligence, evidence gap checks, and predictive risk scoring. AI logic is server-only (edge functions). See [04-module-status.md#14-ai--automation](04-module-status.md#14-ai--automation) for build status.
+**AI layer** — 40+ server-side functions routed through a central `ai-orchestrator`: compliance assistant chat, document analysis, vector knowledge search, research intelligence, evidence gap checks, and predictive risk scoring. AI logic is server-only (edge functions). See [module-status.md#14-ai--automation](../codebase-state/module-status.md#14-ai--automation) for build status.
 
-**Academy module** — A learning platform for client RTO staff. Delivers role-specific course views (Trainer, Compliance Manager, Governance Person, Student Support Officer, Administration Assistant), certificates, assessments, events, and community. Vivacity Super Admins build and manage content via a dedicated course builder. Seat access gating is implemented; Stripe billing is not yet wired. See [04-module-status.md#16-academy](04-module-status.md#16-academy) for build status.
+**Academy module** — A learning platform for client RTO staff. Delivers role-specific course views (Trainer, Compliance Manager, Governance Person, Student Support Officer, Administration Assistant), certificates, assessments, events, and community. Vivacity Super Admins build and manage content via a dedicated course builder. Seat access gating is implemented; Stripe billing is not yet wired. See [module-status.md#16-academy](../codebase-state/module-status.md#16-academy) for build status.
 
-**Resource Hub** — A categorised library of compliance documents, templates, checklists, and guides for client RTOs. Browsable by category (audit evidence, CI tools, registers, templates, training resources, etc.) with search and favourites. Both staff and client portal surfaces are live. See [04-module-status.md#17-resource-hub](04-module-status.md#17-resource-hub) for build status.
+**Resource Hub** — A categorised library of compliance documents, templates, checklists, and guides for client RTOs. Browsable by category (audit evidence, CI tools, registers, templates, training resources, etc.) with search and favourites. Both staff and client portal surfaces are live. See [module-status.md#17-resource-hub](../codebase-state/module-status.md#17-resource-hub) for build status.
 
-**RTO tips / Tasks / Settings / Notifications** — Four lightweight modules: RTO Tips serves quick-reference compliance content to client RTOs; Tasks provides global and tenant-scoped task lists; Settings covers user profile, team config, and integration credentials; Notifications runs an in-app alert outbox pipeline. See [04-module-status.md#10-rto-tips](04-module-status.md#10-rto-tips), [#8-tasks](04-module-status.md#8-tasks), [#11-settings](04-module-status.md#11-settings).
+**RTO tips / Tasks / Settings / Notifications** — Four lightweight modules: RTO Tips serves quick-reference compliance content to client RTOs; Tasks provides global and tenant-scoped task lists; Settings covers user profile, team config, and integration credentials; Notifications runs an in-app alert outbox pipeline. See [module-status.md#10-rto-tips](../codebase-state/module-status.md#10-rto-tips), [#8-tasks](../codebase-state/module-status.md#8-tasks), [#11-settings](../codebase-state/module-status.md#11-settings).
 
 ## What's NOT live (don't assume it is)
 
-- Stripe / subscriptions — not wired. `MembershipDashboard` exists but no Stripe. See [04-module-status.md](04-module-status.md).
+- Stripe / subscriptions — not wired. `MembershipDashboard` exists but no Stripe. See [module-status.md](../codebase-state/module-status.md).
 - `generate-audit-report` — not found in codebase; confirm with RJ
 - The six named AI agents (Alex, Casey, Morgan, Jordan, Riley, Sam) — not confirmed as named entities (many AI functions exist but agent naming is unclear)
 
@@ -142,15 +142,15 @@ Full navigational map: [11-codebase-map.md](11-codebase-map.md).
 ## Onboarding checklist (for new team members)
 
 - [ ] Run the app locally. Login as a Vivacity Super Admin; hop into a client tenant via the switcher.
-- [ ] Read [01-architecture.md](01-architecture.md) end-to-end.
+- [ ] Read [architecture.md](../codebase-state/architecture.md) end-to-end.
 - [ ] Skim every file in [src/pages/](../src/pages/) — names map directly to product surfaces.
 - [ ] Read one edge function front-to-back: [supabase/functions/invite-user/index.ts](../supabase/functions/invite-user/index.ts). It's the canonical service-role pattern.
 - [ ] Read [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md). It's the core product thesis.
-- [ ] Open [04-module-status.md](04-module-status.md) and identify which modules are 🟡 partial — these are the highest-value areas to contribute to.
-- [ ] Ask RJ which open decisions in [05-product-decisions.md](05-product-decisions.md#open-decisions) are actively blocking work.
+- [ ] Open [module-status.md](../codebase-state/module-status.md) and identify which modules are 🟡 partial — these are the highest-value areas to contribute to.
+- [ ] Ask RJ which open decisions in [decisions.md](decisions.md#open-decisions) are actively blocking work.
 
 ---
 
 ## Standing questions to always ask
 
-When a decision feels implicit or invisible, it probably *was* implicit. Surface it to RJ and capture it in [05-product-decisions.md](05-product-decisions.md). This codebase has a history of implicit decisions biting later (RLS incidents, NULL coercion, naming divergence). When in doubt, write it down.
+When a decision feels implicit or invisible, it probably *was* implicit. Surface it to RJ and capture it in [decisions.md](decisions.md). This codebase has a history of implicit decisions biting later (RLS incidents, NULL coercion, naming divergence). When in doubt, write it down.
