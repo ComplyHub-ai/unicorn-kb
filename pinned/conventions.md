@@ -60,7 +60,7 @@ ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;
 
 **Why all three, not two:**
 - Skipping step 1 locks clients out of their own data.
-- Skipping step 2 locks Vivacity staff out of every tenant's data. Staff are not `tenant_members` of client RTOs — they're members of tenant 319. The tenant-scoped SELECT alone blocks them entirely.
+- Skipping step 2 locks Vivacity staff out of every tenant's data. Staff are not `tenant_members` of client RTOs — they're members of tenant 6372. The tenant-scoped SELECT alone blocks them entirely.
 - Skipping step 3 makes the policies completely inactive. Silent failure — no errors, Studio shows the policies.
 
 **History:** Both failure modes occurred in production on the sibling Vivacity project in April 2026. See [06-decision-trail.md → ADR-005](06-decision-trail.md#adr-005). Treat this as a solved problem — don't re-litigate it.
