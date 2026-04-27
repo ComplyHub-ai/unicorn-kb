@@ -12,28 +12,28 @@
 Three git repos carry Unicorn 2.0's knowledge and code. Each has one job.
 
 ```
-unicorn/              ← codebase. Lovable owns this. Don't hand-edit.
+<codebase>/            ← codebase. Lovable owns this. Don't hand-edit.
                         No /docs folder — Lovable shouldn't have to reason
                         about files it didn't create.
 
 unicorn-kb/           ← team KB. This repo.
   ├── pinned/         ← uploaded to Claude Project (always in context)
   ├── reference/      ← fetched via GitHub MCP on demand
-  ├── codebase-state/ ← fetched via GitHub MCP; as-shipped state of unicorn/
+  ├── codebase-state/ ← fetched via GitHub MCP; as-shipped state of <codebase>/
   └── handoffs/       ← scenario-specific procedures
 
-unicorn-audit/        ← Angela's narrative audit trail. Not team-visible.
+unicorn-audit/        ← Carl's narrative audit trail. Not team-visible.
   └── audits/         ← one markdown file per audit event
 ```
 
 **Why split.** Pinning the full KB to every chat wastes context on content
 most chats don't need. Pinning only the stable opinion layer and fetching
-the rest on demand keeps signal density high. The audit repo is Angela's
+the rest on demand keeps signal density high. The audit repo is Carl's
 tool for recording "what I reconciled, when, why" — it belongs separate
 so it doesn't pollute the team KB.
 
-**Why codebase-state lives in `unicorn-kb/`, not `unicorn/`.** Lovable
-controls `unicorn/`. Dropping docs into that repo risks Lovable editing,
+**Why codebase-state lives in `unicorn-kb/`, not `<codebase>/`.** Lovable
+controls `<codebase>/`. Dropping docs into that repo risks Lovable editing,
 deleting, or referencing them incorrectly. Keeping them in `unicorn-kb/`
 keeps Lovable out of the loop, at the cost of a regeneration ritual
 whenever the codebase changes (see `../handoffs/post-lovable-remix.md`).
@@ -48,7 +48,7 @@ whenever the codebase changes (see `../handoffs/post-lovable-remix.md`).
 | Reference | `reference/` | flow-patterns, decision-trail, brainstorm-log, migration-1to2, cadence, source-precedence | On demand, via GitHub MCP |
 | Codebase state | `codebase-state/` | module-status, codebase-map, architecture | On demand, via GitHub MCP |
 | Handoffs | `handoffs/` | README + 5 scenario files | On demand, via GitHub MCP |
-| Source code | `unicorn/` (separate repo) | the actual codebase | On demand, via GitHub MCP |
+| Source code | `<codebase>/` (separate repo) | the actual codebase | On demand, via GitHub MCP |
 
 The routing rules for Claude live in the Claude Project's custom
 instructions. Source-of-truth for routing logic is
@@ -77,7 +77,7 @@ One fact lives in one place. Duplicates are bugs.
 | Module status (what's built) | `codebase-state/module-status.md` |
 | File paths / where things live | `codebase-state/codebase-map.md` |
 | As-shipped system architecture | `codebase-state/architecture.md` |
-| Actual code behaviour | `unicorn/` source via GitHub MCP (ground truth) |
+| Actual code behaviour | `<codebase>/` source via GitHub MCP (ground truth) |
 | Audit narrative | `unicorn-audit/audits/*.md` |
 
 ---
@@ -109,10 +109,10 @@ Every `.md` carries a header:
 ```
 
 `codebase-state/*.md` files additionally carry a **Reflects commit** line
-pointing at the `unicorn/` HEAD SHA they were generated from:
+pointing at the `<codebase>/` HEAD SHA they were generated from:
 
 ```markdown
-> **Reflects commit:** unicorn@abc1234 (YYYY-MM-DD)
+> **Reflects commit:** <codebase>@abc1234 (YYYY-MM-DD)
 ```
 
 Shelf-life defaults by doc type:
@@ -131,7 +131,7 @@ Shelf-life defaults by doc type:
 When a shelf-life date passes, the doc is suspect until reviewed. Either
 re-date it (even just "re-verified, still accurate") or update the
 content. For `codebase-state/*`, check the **Reflects commit** SHA
-against `unicorn/` HEAD — if HEAD has moved, regenerate.
+against `<codebase>/` HEAD — if HEAD has moved, regenerate.
 
 **Confidence levels.** `high` = grounded in code or authoritative source.
 `medium` = observation or inference; verify before acting. `low` =
@@ -190,23 +190,23 @@ past-shelf-life citation in a chat, that's the nudge to review.
 - Claude flags drift between KB and codebase in a chat
 - An Open Decision older than 90 days surfaces
 - A shelf-life date more than 30 days past
-- `codebase-state/` Reflects-commit SHA is weeks behind `unicorn/` HEAD
+- `codebase-state/` Reflects-commit SHA is weeks behind `<codebase>/` HEAD
 - You notice the team answering the same question two different ways
 
 ### Who owns what
 
 | Doc | Primary owner |
 |---|---|
-| `README.md`, `pinned/kb-hygiene.md` | Angela |
-| `pinned/orientation.md`, `pinned/team-roles.md` | Angela |
-| `pinned/conventions.md`, `reference/flow-patterns.md` | Angela + RJ (co-owned) |
-| `pinned/decisions.md`, `reference/decision-trail.md`, `reference/migration-1to2.md` | RJ (with Angela's help) |
-| `reference/cadence.md` | Angela |
-| `reference/brainstorm-log.md` | Anyone; curated by Angela |
-| `pinned/glossary.md` | Anyone; curated by Angela |
-| `handoffs/*.md` | Angela |
-| `codebase-state/*` | Regenerated post-remix, reviewed by Angela + RJ |
-| `unicorn-audit/*` | Angela only |
+| `README.md`, `pinned/kb-hygiene.md` | Carl |
+| `pinned/orientation.md`, `pinned/team-roles.md` | Carl |
+| `pinned/conventions.md`, `reference/flow-patterns.md` | Carl + RJ (co-owned) |
+| `pinned/decisions.md`, `reference/decision-trail.md`, `reference/migration-1to2.md` | RJ (with Carl's help) |
+| `reference/cadence.md` | Carl |
+| `reference/brainstorm-log.md` | Anyone; curated by Carl |
+| `pinned/glossary.md` | Anyone; curated by Carl |
+| `handoffs/*.md` | Carl |
+| `codebase-state/*` | Regenerated post-remix, reviewed by Carl + RJ |
+| `unicorn-audit/*` | Carl only |
 
 ### Pruning discipline
 

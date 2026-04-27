@@ -27,7 +27,7 @@
 | Claude Code | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | GitHub MCP (read) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | GitHub MCP (PR write) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `unicorn/` commit access | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `<codebase>/` commit access | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `unicorn-kb/` commit access | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `unicorn-audit/` access | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Lovable | ✅ | ✅ | ? | ? | ? | ❌ |
@@ -54,10 +54,10 @@ stabilises.
 
 - **RLS migrations:** RJ signs off before merge. No exceptions. Rule from
   `reference/cadence.md → Shipping discipline`.
-- **KB pinned-file changes:** Angela reviews and merges. RJ consulted on
+- **KB pinned-file changes:** Carl reviews and merges. RJ consulted on
   `conventions.md` and `flow-patterns.md` changes.
-- **Open Decision resolution:** Anyone can propose resolution; RJ or Angela
+- **Open Decision resolution:** Anyone can propose resolution; RJ or Carl
   merges the ADR.
-- **Lovable remix trigger:** Angela's call, communicated before remix so
+- **Lovable remix trigger:** Carl's call, communicated before remix so
   the team can pause commits.
-- **Audit events:** Angela only. Not a team-visible process.
+- **Audit events:** Carl only. Not a team-visible process.

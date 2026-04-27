@@ -14,8 +14,8 @@
 |---|---|
 | Were brainstorming in claude.ai, reached a decision, now need to implement or record | [claude-project-to-claude-code.md](claude-project-to-claude-code.md) |
 | Just finished a Claude Code session and want to capture what changed for the KB | [claude-code-to-claude-project.md](claude-code-to-claude-project.md) |
-| Are pulling in a feature Lovable shipped to `unicorn/` | [lovable-to-codebase.md](lovable-to-codebase.md) |
-| Are reconciling after a Lovable remix (Angela only) | [post-lovable-remix.md](post-lovable-remix.md) |
+| Are pulling in a feature Lovable shipped to `<codebase>/` | [lovable-to-codebase.md](lovable-to-codebase.md) |
+| Are reconciling after a Lovable remix (Carl only) | [post-lovable-remix.md](post-lovable-remix.md) |
 | Are a non-technical stakeholder with a KB proposal | [non-technical-proposal.md](non-technical-proposal.md) |
 
 ---
@@ -33,4 +33,4 @@ Don't reach for a handoff if you're:
 
 If you find yourself skipping a handoff that you should have used, log
 that in [../reference/brainstorm-log.md](../reference/brainstorm-log.md) so
-Angela can decide whether the handoff is wrong or the reminder loop is.
+Carl can decide whether the handoff is wrong or the reminder loop is.

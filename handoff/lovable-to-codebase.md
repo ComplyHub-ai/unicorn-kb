@@ -2,7 +2,7 @@
 
 > **Last updated:** 2026-04-24 · **Reconsider by:** 2026-07-24 · **Confidence:** medium.
 >
-> Lovable shipped a feature. Code landed in `unicorn/`. This handoff walks
+> Lovable shipped a feature. Code landed in `<codebase>/`. This handoff walks
 > through pulling it in, verifying it, refreshing the affected parts of
 > `codebase-state/`, and checking whether it introduces anything the rest
 > of the KB needs to know about.
@@ -16,7 +16,7 @@
 ## Pull and review
 
 ```bash
-cd ~/code/unicorn
+cd ~/repository/unicorn-workspace/<codebase>
 git pull
 ```
 
@@ -29,14 +29,14 @@ Read what changed. Not the whole diff — the **shape** of the change. Ask:
 
 ---
 
-## Don't hand-edit `unicorn/`
+## Don't hand-edit `<codebase>/`
 
 Unless it's a true hotfix (security, data corruption, production down),
-hand-edits to `unicorn/` create drift with Lovable's view of the codebase.
-Next Lovable session can overwrite. Let Lovable own `unicorn/` changes
+hand-edits to `<codebase>/` create drift with Lovable's view of the codebase.
+Next Lovable session can overwrite. Let Lovable own `<codebase>/` changes
 end-to-end.
 
-There is no `unicorn/docs/` to maintain — codebase state lives in
+There is no `<codebase>/docs/` to maintain — codebase state lives in
 `unicorn-kb/codebase-state/`, which is your repo to edit.
 
 ---
@@ -47,9 +47,9 @@ A feature ship doesn't require full regeneration (that's the remix
 trigger), but the parts of `codebase-state/` that describe the affected
 area are now stale.
 
-Open Claude Code at `~/code/`. Paste the change summary. Ask:
+Open Claude Code at `~/repository/unicorn-workspace/`. Paste the change summary. Ask:
 
-> Based on these changes in unicorn/, refresh ONLY the affected parts of
+> Based on these changes in <codebase>/, refresh ONLY the affected parts of
 > unicorn-kb/codebase-state/:
 >
 > - module-status.md: update the affected module row(s)
@@ -59,7 +59,7 @@ Open Claude Code at `~/code/`. Paste the change summary. Ask:
 >   table, or a new flow — otherwise skip
 >
 > Do not regenerate the whole file; surgical edits only. Update the
-> "Reflects commit" SHA in the header to the current unicorn/ HEAD.
+> "Reflects commit" SHA in the header to the current <codebase>/ HEAD.
 
 Review the diff in `unicorn-kb/`. Branch → commit → push → PR → merge.
 
@@ -70,7 +70,7 @@ Review the diff in `unicorn-kb/`. Branch → commit → push → PR → merge.
 Open a claude.ai chat in the Unicorn 2.0 project. Paste the change
 summary. Ask:
 
-> Based on what landed in unicorn/ in this pull, does anything in
+> Based on what landed in <codebase>/ in this pull, does anything in
 > pinned/ or reference/ need to update? codebase-state has already been
 > refreshed. Apply the "Push back and recommend an update" rule from
 > pinned/kb-hygiene.md.
@@ -103,7 +103,7 @@ not a warning.
 
 ---
 
-## Audit trigger (Angela only)
+## Audit trigger (Carl only)
 
 Open an audit doc in `unicorn-audit/audits/` if:
 - The Lovable feature contradicts something in the pinned KB.
@@ -128,7 +128,7 @@ design.
   remix ritual, not a feature-ship ritual.
 - **Treating the pull as "just a pull."** Any Lovable feature is
   potentially a KB-affecting event. Check even if it looks routine.
-- **Editing `unicorn/` to fix a Lovable miss.** Tempting, but creates
+- **Editing `<codebase>/` to fix a Lovable miss.** Tempting, but creates
   drift. Either raise with RJ to re-prompt Lovable, or flag the fix as
   a genuine hotfix (and log it in the audit repo).
 - **Skipping the RLS check.** The most common silent failure class on

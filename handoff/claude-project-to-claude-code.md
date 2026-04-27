@@ -6,7 +6,7 @@
 > crystallised, or a change needs to be made. Now you need to carry that out
 > of chat into either the codebase or the KB without losing the context.
 >
-> **Applies to:** Angela, RJ, Khian.
+> **Applies to:** Carl, RJ, Khian.
 
 ---
 
@@ -25,7 +25,7 @@ Copy that summary. That's what you'll paste into Claude Code.
 
 ## Open Claude Code
 
-Open at `~/code/` (parent of `unicorn/`, `unicorn-kb/`, `unicorn-audit/`)
+Open at `~/repository/unicorn-workspace/` (workspace root — contains `<codebase>/`, `unicorn-kb/`, `unicorn-audit/`)
 so Claude Code can see all three repos.
 
 Paste the summary. Ask Claude Code to scope the work:
@@ -45,10 +45,10 @@ Read the scope. Correct it if Claude Code misread anything.
 3. Review the diff yourself. RLS-adjacent content → RJ reviews.
 4. Commit, push, open PR against `unicorn-kb:main`, merge.
 
-**If only `unicorn/` changes:**
+**If only `<codebase>/` changes:**
 1. Flag: is this something Lovable should be doing instead?
 2. If yes, stop here — this is a Lovable job, not a hand-edit.
-3. If no (hotfix, security fix, doc-only change to `unicorn/docs/*`):
+3. If no (hotfix, security fix, doc-only change to `<codebase>/docs/*`):
    branch, commit, review, PR, merge.
 
 **If both repos change:**
@@ -59,7 +59,7 @@ Read the scope. Correct it if Claude Code misread anything.
 
 ---
 
-## Record in the audit repo (conditional, Angela only)
+## Record in the audit repo (conditional, Carl only)
 
 Open an audit doc if the change:
 - Resolves an Open Decision.
