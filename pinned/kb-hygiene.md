@@ -1,6 +1,6 @@
 # KB Hygiene
 
-> **Last updated:** 2026-04-24 · **Reconsider by:** 2026-10-24 · **Confidence:** high (meta-doc).
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** high (meta-doc).
 >
 > How to keep this knowledge base useful over time. Applies to both the KB
 > itself and the team maintaining it.
@@ -195,17 +195,19 @@ past-shelf-life citation in a chat, that's the nudge to review.
 
 ### Who owns what
 
+After the 2026-04-27 seat-centric restructure, the project lead + KB owner seat (Carl) is sole owner of all KB content. Anyone can propose changes; Carl merges. RJ is no longer co-owner of any doc here — he's primarily on ComplyHub now. See `pinned/team-roles.md` for the full seat model.
+
 | Doc | Primary owner |
 |---|---|
 | `README.md`, `pinned/kb-hygiene.md` | Carl |
 | `pinned/orientation.md`, `pinned/team-roles.md` | Carl |
-| `pinned/conventions.md`, `reference/flow-patterns.md` | Carl + RJ (co-owned) |
-| `pinned/decisions.md`, `reference/decision-trail.md`, `reference/migration-1to2.md` | RJ (with Carl's help) |
+| `pinned/conventions.md`, `reference/flow-patterns.md` | Carl |
+| `pinned/decisions.md`, `reference/decision-trail.md`, `reference/migration-1to2.md` | Carl |
 | `reference/cadence.md` | Carl |
 | `reference/brainstorm-log.md` | Anyone; curated by Carl |
 | `pinned/glossary.md` | Anyone; curated by Carl |
 | `handoffs/*.md` | Carl |
-| `codebase-state/*` | Regenerated post-remix, reviewed by Carl + RJ |
+| `codebase-state/*` | Regenerated post-remix by Carl |
 | `unicorn-audit/*` | Carl only |
 
 ### Pruning discipline
