@@ -1,6 +1,6 @@
 # Product Decisions (Index)
 
-> **Last updated:** 2026-04-24 · **Reconsider by:** 2026-07-24 · **Confidence:** high for recorded entries.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-07-24 · **Confidence:** high for recorded entries.
 >
 > One-line-per-decision index. For full rationale, alternatives, and
 > supersession history, see [../reference/decision-trail.md](../reference/decision-trail.md).
@@ -15,14 +15,7 @@
 
 > Format: `[ADR-NNN] [YYYY-MM-DD] [one-line summary] — full: reference/decision-trail.md#adr-NNN`
 
-<!--
-  Migrate all existing decided ADRs from the previous 05-product-decisions.md
-  here as one-liners. Preserve ADR numbers. Sort newest-first.
-
-  Example row:
-  - [ADR-003] 2025-11-04 — tenant 319 is the Vivacity staff tenant (single
-    source of truth) — full: reference/decision-trail.md#adr-003
--->
+Intentionally empty as of 2026-04-27. The legacy ADR-001 through ADR-010 records live in reference/decision-trail.md but were not migrated forward as one-liners — they'll be re-engaged here as they become relevant in real work. New decisions from this point forward are recorded as normal (one-line index entry here + full ADR in decision-trail.md).
 
 ---
 
@@ -33,11 +26,7 @@
 > **Rule:** open > 6 months with no movement → either delete or escalate.
 > See `kb-hygiene.md → Pruning discipline`.
 
-<!--
-  Migrate existing Open items from previous 05-product-decisions.md here.
-  When an item is resolved, move it up to "Decided" AND add the full ADR to
-  reference/decision-trail.md.
--->
+Intentionally empty as of 2026-04-27. Open decisions will be added as they surface — see reference/decision-trail.md → "Decisions still needing ADRs" for items previously identified as needing follow-up.
 
 ---
 
