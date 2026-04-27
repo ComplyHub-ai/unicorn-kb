@@ -55,6 +55,7 @@ Read the signal: this isn't a net-new-features week, it's stabilisation work. Do
 - Campaign engine decision (build / buy / defer)
 - Client portal architecture decision
 - Tighten edge function error codes across all functions (pattern established in `invite-user`, not consistent elsewhere)
+- Pragmatic Clean Architecture refactor — pilot via Lovable on Lifecycle Checklists slice. Plan: [clean-architecture-refactor.md](clean-architecture-refactor.md)
 
 ### Later
 - ~~Outlook calendar sync~~ ✅ **Shipped**
