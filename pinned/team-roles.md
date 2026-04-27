@@ -24,7 +24,7 @@ The team is organised as four seats — three contributor, one consumer. Seats d
 
 **Purpose**: Leads the Unicorn engineering effort day-to-day and stewards the knowledge base. Translates product direction into shipped code; keeps the KB honest as the codebase and team evolve.
 
-**Owns**: KB structure and hygiene; `unicorn-audit/` repo (sole access, sole author); Lovable remix trigger; post-remix ritual; KB pinned-file changes; `conventions.md` and `flow-patterns.md`; ADR merging (anyone proposes; project lead merges); Open Decision resolution; curation of `glossary.md` and `brainstorm-log.md`; reconciliation cadence.
+**Owns**: KB structure and hygiene; `unicorn-audit/` repo (sole author — read access is universal across the org per the 2026-04-28 reconciliation); Lovable remix trigger; post-remix ritual; KB pinned-file changes; `conventions.md` and `flow-patterns.md`; ADR merging (anyone proposes; project lead merges); Open Decision resolution; curation of `glossary.md` and `brainstorm-log.md`; reconciliation cadence.
 
 **Contributes to**: feature implementation as a Dev (the project lead also wears the Dev seat).
 
