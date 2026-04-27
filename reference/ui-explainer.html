@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Unicorn UI Explainer — Staff &amp; Client surfaces</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #2a313c;
+    --ink: #e6edf3;
+    --ink-dim: #9aa4b2;
+    --ink-mute: #6b7280;
+    --accent: #c084fc;
+    --accent-2: #ec4899;
+    --gradient: linear-gradient(135deg, #6109a1 0%, #d51c49 100%);
+    --good: #34d399;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --stub: #94a3b8;
+    --unclear: #facc15;
+    --client-grad: linear-gradient(180deg, hsl(270 55% 41%) 0%, hsl(330 86% 51%) 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px; line-height: 1.5; }
+  header { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  header h1 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  header p { margin: 0; color: var(--ink-dim); font-size: 13px; max-width: 820px; }
+  header p + p { margin-top: 6px; }
+  .tabs { display: flex; gap: 6px; padding: 12px 22px 0; border-bottom: 1px solid var(--border); background: var(--panel); }
+  .tab { padding: 10px 16px; background: transparent; border: 0; color: var(--ink-dim);
+    font: inherit; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:hover { color: var(--ink); }
+  .layout { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 110px); }
+  aside { border-right: 1px solid var(--border); overflow-y: auto; max-height: calc(100vh - 110px); }
+  aside.staff { background: var(--gradient); }
+  aside.client { background: var(--client-grad); }
+  .sidebar-header { padding: 14px 16px; color: rgba(255,255,255,0.85); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .section-title { padding: 14px 16px 6px; color: rgba(255,255,255,0.65);
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 14px; margin: 1px 8px;
+    color: rgba(255,255,255,0.85); cursor: pointer; border-radius: 18px; font-size: 13px;
+    border: 1px solid transparent; }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .nav-item.active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22); color: #fff; }
+  .nav-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.live { background: var(--good); }
+  .dot.partial { background: var(--warn); }
+  .dot.notstarted { background: var(--bad); }
+  .dot.stub { background: var(--stub); }
+  .dot.unclear { background: var(--unclear); }
+  .nav-item .label { flex: 1; }
+  .nav-item .badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: rgba(0,0,0,0.25);
+    color: rgba(255,255,255,0.85); }
+  main { padding: 24px 28px; overflow-y: auto; max-height: calc(100vh - 110px); }
+  .panel { max-width: 820px; }
+  .crumb { font-size: 12px; color: var(--ink-mute); margin-bottom: 6px; }
+  h2 { margin: 0 0 6px; font-size: 22px; font-weight: 600; }
+  .purpose { color: var(--ink); background: var(--panel-2); padding: 12px 14px;
+    border-left: 3px solid var(--accent); border-radius: 4px; margin: 14px 0 18px; }
+  .meta { display: grid; grid-template-columns: 130px 1fr; row-gap: 8px; column-gap: 14px;
+    margin: 14px 0 18px; padding: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+  .meta dt { color: var(--ink-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .meta dd { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; word-break: break-all; }
+  .meta dd code { background: var(--panel-2); padding: 1px 5px; border-radius: 3px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 500; }
+  .pill.live { background: rgba(52,211,153,0.15); color: var(--good); }
+  .pill.partial { background: rgba(251,191,36,0.15); color: var(--warn); }
+  .pill.notstarted { background: rgba(248,113,113,0.15); color: var(--bad); }
+  .pill.stub { background: rgba(148,163,184,0.18); color: var(--stub); }
+  .pill.unclear { background: rgba(250,204,21,0.15); color: var(--unclear); }
+  .desc { color: var(--ink); margin: 6px 0 14px; }
+  .files ul, .caveats ul { margin: 6px 0 14px; padding-left: 20px; }
+  .files li { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--ink-dim); }
+  .caveats li { color: var(--ink-dim); margin-bottom: 4px; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-dim); margin: 18px 0 6px; font-weight: 600; }
+  .divergence { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.4);
+    color: #fecaca; padding: 10px 12px; border-radius: 6px; margin: 12px 0; font-size: 13px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 22px; font-size: 12px;
+    color: var(--ink-dim); border-bottom: 1px solid var(--border); background: var(--panel); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  footer { padding: 14px 22px; color: var(--ink-mute); font-size: 12px; border-top: 1px solid var(--border); }
+  .surface-note { font-size: 12px; color: var(--ink-dim); padding: 12px 16px;
+    background: rgba(0,0,0,0.18); margin: 0 8px 8px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Unicorn UI Explainer</h1>
+  <p>Interactive map of every sidebar item in Unicorn's two main UI surfaces. Click any item to see what it does, why it exists, and where the code lives. Built for new devs (and pre-login onboarding) who haven't seen the running app yet.</p>
+  <p>Reflects <code>&lt;codebase&gt;@cf8d1314</code> (2026-04-25). Self-contained — no backend, no real data.</p>
+</header>
+
+<div class="legend">
+  <span><span class="dot live" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> Live (shipped)</span>
+  <span><span class="dot partial" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> Partial (in progress)</span>
+  <span><span class="dot notstarted" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> Not started</span>
+  <span><span class="dot stub" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> Stub — sidebar item, no route</span>
+  <span><span class="dot unclear" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> Purpose unclear — verify with Carl</span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-surface="staff">Staff view (Vivacity Team)</button>
+  <button class="tab" data-surface="client">Client view (Client Portal)</button>
+</div>
+
+<div class="layout">
+  <aside id="sidebar" class="staff"></aside>
+  <main><div class="panel" id="panel"></div></main>
+</div>
+
+<footer>
+  Surfaces are distinguished at runtime by <code>unicorn_role</code> + <code>tenant_id</code> (Vivacity = tenant 6372). Vivacity staff can toggle a "View as Client" mode that swaps the sidebar to a simplified client menu — that's a third, derivative surface; only the two primary sidebars are mapped here.
+</footer>
+
+<script>
+// --------------------------------------------------------------------
+// DATA — extracted from src/components/DashboardLayout.tsx (staff)
+//        and src/components/client/ClientSidebar.tsx (client)
+//        cross-referenced against codebase-state/module-status.md and
+//        pinned/orientation.md (commit cf8d1314, 2026-04-25)
+// --------------------------------------------------------------------
+
+const DATA = {
+  staff: {
+    surfaceNote: "Shown to users with unicorn_role in {Super Admin, Team Leader, Team Member} and tenant_id = 6372 (Vivacity). Sections collapse by default. Several sections are role-gated — see per-item caveats. Sidebar source: src/components/DashboardLayout.tsx.",
+    sections: [
+      {
+        title: "Work",
+        items: [
+          { id: "s-dashboard", label: "Dashboard", route: "/dashboard", page: "src/pages/Dashboard.tsx",
+            module: "Cross-cutting (aggregates)", status: "live",
+            purpose: "Personal landing page with cross-module aggregates — week's tasks, stats, charts.",
+            desc: "First screen after login. Pulls from useDashboardData and surfaces the user's open work across modules. Same component is also reused for the (currently bare) /documents and /reports placeholder routes.",
+            files: ["src/pages/Dashboard.tsx", "src/hooks/useDashboardData.ts", "src/components/dashboard/"],
+            caveats: ["The /documents and /reports routes both render Dashboard — they are placeholders, not their own pages."] },
+          { id: "s-exec", label: "Executive Dashboard", route: "/executive", page: "src/pages/ExecutiveDashboard.tsx",
+            module: "Cross-cutting (aggregates)", status: "unclear",
+            purpose: "Leadership-only view of financial controls, client commitments, and a decision queue.",
+            desc: "Visible only to Super Admin and Team Leader (leadershipOnly flag in sidebar). Has three sub-routes (/executive/financial-controls, /executive/client-commitments, /executive/decision-queue) all gated to Super Admin. Not listed as a distinct module in module-status.md.",
+            files: ["src/pages/ExecutiveDashboard.tsx", "src/pages/ExecutiveFinancialControls.tsx", "src/pages/ExecutiveClientCommitments.tsx"],
+            caveats: ["No module-status.md entry — verify product purpose and ownership with Carl."] },
+          { id: "s-inbox", label: "Inbox", route: "/inbox", page: "src/pages/TeamInboxWrapper.tsx",
+            module: "Cross-cutting", status: "unclear",
+            purpose: "Team-side inbox of incoming items requiring staff attention.",
+            desc: "Distinct from the client-portal /client/inbox. Code is present but module-status.md does not call this out as its own module — likely a thin aggregation surface over notifications and requests.",
+            files: ["src/pages/TeamInboxWrapper.tsx"],
+            caveats: ["Purpose unclear from KB alone — verify scope with Carl."] },
+          { id: "s-mywork", label: "My Work", route: "/my-work", page: "src/pages/MyWork.tsx",
+            module: "Cross-cutting", status: "unclear",
+            purpose: "Personal work queue across modules (tasks, todos, meeting prep).",
+            desc: "Personal cross-module aggregator. No dedicated module-status.md entry.",
+            files: ["src/pages/MyWork.tsx"],
+            caveats: ["Verify with Carl whether this is the canonical landing page or a parallel surface to /dashboard."] },
+          { id: "s-tasks", label: "Tasks", route: "/tasks", page: "src/pages/TasksManagementWrapper.tsx",
+            module: "8. Tasks", status: "live",
+            purpose: "Global task list across all tenants the user can see.",
+            desc: "Same wrapper component is reused for /tenant/:tenantId/tasks (tenant-scoped variant). ClickUp two-way sync feeds this surface.",
+            files: ["src/pages/TasksManagementWrapper.tsx"],
+            caveats: ["Old docs reference 'stage task auto-completion' — not yet evident in this codebase."] },
+          { id: "s-time-inbox", label: "Time Inbox", route: "/time-inbox", page: "src/pages/TimeInbox.tsx",
+            module: "13. Booking / Scheduling (time tracking angle)", status: "partial",
+            purpose: "Inbox of time entries/drafts needing review or assignment to clients.",
+            desc: "Time-capture pages were added alongside Outlook calendar sync. Likely fed by sync-outlook-calendar + outlook-time-draft-worker edge functions.",
+            files: ["src/pages/TimeInbox.tsx", "supabase/functions/outlook-time-draft-worker/"],
+            caveats: ["Booking module is marked 🟡 partial in module-status.md — Outlook sync live; general-purpose booking deferred."] },
+          { id: "s-mycal", label: "My Calendar", route: "/work/calendar", page: "src/pages/WorkCalendarWrapper.tsx",
+            module: "13. Booking / Scheduling", status: "partial",
+            purpose: "Personal calendar view, Outlook-synced.",
+            desc: "Outlook calendar sync (sync-outlook-calendar, outlook-auth) backs this. /calendar/outlook-callback handles the OAuth return.",
+            files: ["src/pages/WorkCalendarWrapper.tsx", "supabase/functions/sync-outlook-calendar/"],
+            caveats: ["Google calendar not integrated; general-purpose booking (OnceHub-replacement) not confirmed in scope."] },
+          { id: "s-meetings", label: "Meetings", route: "/work/meetings", page: "src/pages/WorkMeetingsWrapper.tsx",
+            module: "Cross-cutting (Meetings)", status: "unclear",
+            purpose: "Personal/team meeting list — separate from EOS Level 10 meetings.",
+            desc: "Distinct from /eos/meetings. Likely surfaces all calendar meetings (Outlook-synced) versus EOS-specific Level 10s.",
+            files: ["src/pages/WorkMeetingsWrapper.tsx"],
+            caveats: ["Relationship to EOS Meetings vs general Outlook meetings is not documented — verify with Carl."] },
+          { id: "s-evcal", label: "Event Calendar", route: "/calendar", page: "src/pages/CalendarWrapper.tsx",
+            module: "13. Booking / Scheduling", status: "partial",
+            purpose: "Shared event calendar across the team.",
+            desc: "Top-level /calendar is distinct from /work/calendar (personal) and /eos/calendar (EOS scope).",
+            files: ["src/pages/CalendarWrapper.tsx"],
+            caveats: ["Three calendar surfaces coexist — verify which one is canonical for which use case."] },
+        ]
+      },
+      {
+        title: "Clients",
+        items: [
+          { id: "s-clients", label: "Clients", route: "/manage-tenants", page: "src/pages/ManageTenantsWrapper.tsx",
+            module: "2. Tenants & Multi-tenancy", status: "live",
+            purpose: "Master list of every client RTO (every tenant except Vivacity 6372). Click into a client to open their dedicated workspace.",
+            desc: "Drill-down lands on /tenant/:tenantId (ClientDetailWrapper) which has tabs for logins, members, documents, notes, packages, impact, etc.",
+            files: ["src/pages/ManageTenantsWrapper.tsx", "src/pages/ClientDetailWrapper.tsx", "sql-setup/01-tenant-schema.sql"],
+            caveats: ["Parent-child org relationships mentioned in legacy docs — confirm equivalent in current codebase."] },
+          { id: "s-packages", label: "Packages", route: "/manage-packages", page: "src/pages/ManagePackagesWrapper.tsx",
+            module: "5. Packages / Pipeline Stages", status: "live",
+            purpose: "Vivacity's productised service offerings as Packages with ordered Stages; each client has a stage-instance progress tracker.",
+            desc: "Models the consulting pipeline. start_client_package RPC enforces a duplicate-stream guard (RTO/CRICOS/GTO/generic). add-missing-packages edge function ensures defaults per tenant.",
+            files: ["src/pages/ManagePackagesWrapper.tsx", "supabase/functions/add-missing-packages/", "supabase/migrations/20260423093423_*.sql"],
+            caveats: ["Pipeline automation / auto-stage-moves referenced in old docs — not yet in this codebase."] },
+          { id: "s-documents", label: "Documents", route: "/manage-documents", page: "src/pages/ManageDocumentsWrapper.tsx",
+            module: "7. Documents", status: "partial",
+            purpose: "Document management UI — categories, custom fields, tenant-scoped libraries.",
+            desc: "Backed by AI document analysis (analyze-document, scan-document, chunk-document) and SharePoint integration for browsing/linking.",
+            files: ["src/pages/ManageDocumentsWrapper.tsx", "supabase/functions/analyze-document/", "supabase/functions/scan-document/"],
+            caveats: ["Version history / templates-vs-instances distinction not yet confirmed."] },
+          { id: "s-comms", label: "Communications", route: "/communications", page: "src/pages/TeamCommunicationsWrapper.tsx",
+            module: "9. Campaigns / Email", status: "partial",
+            purpose: "Outbound communications surface — team comms, client emails, stage-triggered messages.",
+            desc: "Mailgun handles auth/transactional; Microsoft Graph (send-email-graph, send-composed-email) handles consultant-composed emails.",
+            files: ["src/pages/TeamCommunicationsWrapper.tsx", "supabase/functions/send-email-graph/", "supabase/functions/send-stage-email/"],
+            caveats: ["Broadcast/campaign builder UI and segmentation not yet confirmed in scope."] },
+          { id: "s-rtotips", label: "RTO Tips", route: "/rto-tips", page: "src/pages/RtoTipsWrapper.tsx",
+            module: "10. RTO Tips", status: "live",
+            purpose: "Quick-reference compliance tips/content for RTO clients.",
+            desc: "Lightweight content surface backed by useRtoTips hook.",
+            files: ["src/pages/RtoTipsWrapper.tsx", "src/hooks/useRtoTips.ts"], caveats: [] },
+          { id: "s-comp-aud", label: "Compliance Auditor", route: "/compliance-audits", page: "src/pages/ComplianceAuditGlobal.tsx",
+            module: "Likely related to 4. Audits", status: "unclear",
+            purpose: "Likely a global cross-tenant compliance review tool; per-tenant lists at /compliance-audits/:tenantId, audit forms and reports underneath.",
+            desc: "Code path is fully wired (ComplianceAuditGlobal → ComplianceAuditList → ComplianceAuditForm → ComplianceAuditReport, plus useComplianceAudits hook), but module-status.md groups everything audit-related under the single 'Audits & Assessments' module — the distinction between this and /audits is not documented in the KB.",
+            files: ["src/pages/ComplianceAuditGlobal.tsx", "src/pages/ComplianceAuditList.tsx", "src/hooks/useComplianceAudits.ts"],
+            caveats: ["Purpose unclear — verify with Carl how this differs from /audits."] },
+          { id: "s-audits", label: "Audits", route: "/audits", page: "src/pages/AuditsAssessments.tsx",
+            module: "4. Audits & Assessments", status: "partial",
+            purpose: "Vivacity's compliance audit engagements (CHC, Mock, CRICOS, Due Diligence) — staff log findings, assign corrective actions, generate reports.",
+            desc: "Workspace is heavily expanded as of April 2026: tabbed shell (Overview / Schedule / AuditForm / Findings / Actions / Documents / Report), three-phase lifecycle (Opening → Document Review → Closing), autosave plumbing, risk-rating UI. Question bank seed: 395 questions / 91 sections / 5 templates. AuditWorkspaceNew.tsx is the workspace page, not AuditWorkspace.tsx.",
+            files: ["src/pages/AuditsAssessments.tsx", "src/pages/AuditWorkspaceNew.tsx", "src/components/audit/workspace/", "sql-setup/05-audit-schema.sql"],
+            caveats: ["Backend is client-side direct DB (no audit edge function — a create-client-audit function landed and was reverted same day, 2026-04-20).", "generate-audit-report edge function not present — confirm AI report generation scope with RJ.", "Module-status flags this 🟡 because of greenfield server-side pipeline."] },
+        ]
+      },
+      {
+        title: "EOS",
+        items: [
+          { id: "s-eos", label: "EOS Overview", route: "/eos", page: "src/pages/EosOverview.tsx",
+            module: "3. EOS Level 10 Meeting Module", status: "live",
+            purpose: "Landing page for the EOS module — the flagship product surface.",
+            desc: "EOS = Entrepreneurial Operating System. Level 10 Meeting methodology is implemented end-to-end (V/TO, Rocks, Scorecard, Issues/IDS, To-Dos, Meetings, QC, Accountability Chart). See docs/EOS_LEVEL10_SPECIFICATION.md.",
+            files: ["src/pages/EosOverview.tsx", "src/components/eos/", "docs/EOS_LEVEL10_SPECIFICATION.md"], caveats: [] },
+          { id: "s-eos-lead", label: "Leadership Dashboard", route: "/eos/leadership", page: "src/pages/EosLeadershipDashboard.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Leadership-only EOS roll-up — Rocks status, scorecard health, GWC trends across the leadership team.",
+            desc: "Hidden from Team Member role (leadershipOnly flag).",
+            files: ["src/pages/EosLeadershipDashboard.tsx"], caveats: [] },
+          { id: "s-eos-sc", label: "Scorecard", route: "/eos/scorecard", page: "src/pages/EosScorecard.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Weekly metrics dashboard — the EOS Scorecard.",
+            desc: "Tracks the team's weekly numbers. scorecard-refresh edge function recalculates aggregates.",
+            files: ["src/pages/EosScorecard.tsx", "src/hooks/useEosScorecardEntries.ts", "src/hooks/useEosScorecardMetrics.ts"], caveats: [] },
+          { id: "s-eos-vto", label: "Mission Control", route: "/eos/vto", page: "src/pages/EosVto.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "EOS V/TO (Vision / Traction Organizer) editor — core values, 10-year target, marketing strategy, 3-year picture, 1-year plan.",
+            desc: "Sidebar label says 'Mission Control', URL says vto, KB and EOS spec call it V/TO. All three names refer to the same surface.",
+            files: ["src/pages/EosVto.tsx"],
+            caveats: ["Naming inconsistency: 'Mission Control' (sidebar) vs 'V/TO' (URL/spec) — the same thing."] },
+          { id: "s-eos-rocks", label: "Rocks", route: "/eos/rocks", page: "src/pages/EosRocks.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Quarterly priorities (Rocks), tagged client/team/company.",
+            desc: "ai-suggest-rock and ai-generate-suggestions edge functions provide draft Rocks.",
+            files: ["src/pages/EosRocks.tsx", "supabase/functions/ai-suggest-rock/"], caveats: [] },
+          { id: "s-eos-flight", label: "Flight Plan", route: "/eos/flight-plan", page: "src/pages/EosFlightPlan.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Visual timeline of Rocks and milestones (eos_flight_plans table).",
+            desc: "Backed by eos_flight_plans schema (see architecture.md).",
+            files: ["src/pages/EosFlightPlan.tsx"], caveats: [] },
+          { id: "s-eos-risks", label: "Risks & Opportunities", route: "/eos/risks-opportunities", page: "src/pages/EosRisksOpportunities.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "EOS Issues list — IDS (Identify, Discuss, Solve) workflow. Renamed surface for what EOS canonically calls 'Issues'.",
+            desc: "/eos/issues redirects here. The KB still uses 'Issues' terminology; the UI renamed it to 'Risks & Opportunities'.",
+            files: ["src/pages/EosRisksOpportunities.tsx", "src/hooks/useMeetingIssues.ts"],
+            caveats: ["Naming divergence: code/KB say 'Issues'; sidebar and URL say 'Risks & Opportunities'. /eos/issues is a redirect now."] },
+          { id: "s-eos-todos", label: "To-Dos", route: "/eos/todos", page: "src/pages/EosTodos.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Short-term action items captured during meetings — separate from Tasks.",
+            desc: "Distinct table (eos_todos) from the global Tasks module. Carries the EOS 7-day-completion convention.",
+            files: ["src/pages/EosTodos.tsx", "src/hooks/useMeetingTodos.ts"], caveats: [] },
+          { id: "s-eos-meetings", label: "Meetings", route: "/eos/meetings", page: "src/pages/EosMeetings.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "EOS Level 10 Meeting list, scheduler, and live multi-participant view.",
+            desc: "Live meeting view at /eos/meetings/:meetingId/live (LiveMeetingView component, real-time via Supabase channels). Post-meeting summary at /eos/meetings/:meetingId/summary. generate-meeting-recurrence edge function expands recurrences.",
+            files: ["src/components/eos/LiveMeetingView.tsx", "src/hooks/useMeetingRealtime.ts", "supabase/functions/generate-meeting-recurrence/"],
+            caveats: ["Tablet/facilitator focus mode and meeting recording/transcription are open scope."] },
+          { id: "s-eos-qc", label: "Quarterly Conversations", route: "/eos/qc", page: "src/pages/EosQC.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "EOS quarterly 1:1 conversations between manager and direct report.",
+            desc: "Per-session view at /eos/qc/:id. PDF export via utils/qcPdfExport.ts.",
+            files: ["src/pages/EosQC.tsx", "src/pages/EosQCSession.tsx", "src/utils/qcPdfExport.ts"], caveats: [] },
+          { id: "s-eos-acc", label: "Accountability Chart", route: "/eos/accountability", page: "src/pages/EosAccountabilityChart.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Visual org chart of seats and roles (EOS Accountability Chart).",
+            desc: "Leadership-only. Backed by accountability_charts/_versions/_functions/_seats/_seat_roles/_seat_assignments tables (see architecture.md).",
+            files: ["src/pages/EosAccountabilityChart.tsx"], caveats: [] },
+          { id: "s-eos-gwc", label: "GWC Trends", route: "/eos/gwc-trends", page: "src/pages/EosGWCTrends.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Trends in Get-it / Want-it / Capacity-to-do-it ratings from People Analyzer over time.",
+            desc: "/eos/people-analyzer is the data-entry surface; this is the trend view.",
+            files: ["src/pages/EosGWCTrends.tsx", "src/pages/EosPeopleAnalyzer.tsx"], caveats: [] },
+          { id: "s-eos-rock-anal", label: "Rock Analysis", route: "/eos/rock-analysis", page: "src/pages/EosRockAnalysis.tsx",
+            module: "3. EOS", status: "live",
+            purpose: "Analytics view over Rock completion patterns and quality.",
+            desc: "Sits alongside Rocks; supports utils/rockRollup.ts and rockStatusUtils.ts.",
+            files: ["src/pages/EosRockAnalysis.tsx", "src/utils/rockRollup.ts"], caveats: [] },
+          { id: "s-eos-impact", label: "Client Impact", route: "/eos/client-impact", page: "src/pages/EosClientImpact.tsx",
+            module: "3. EOS / 6. Client Portal", status: "live",
+            purpose: "Reports of measurable impact Vivacity has had on each client. Per-report drill-down at /eos/client-impact/:reportId; per-client at /tenant/:clientId/impact.",
+            desc: "Cross-cutting between EOS rollups and client-facing reporting.",
+            files: ["src/pages/EosClientImpact.tsx", "src/pages/EosClientImpactDetail.tsx", "src/pages/ClientImpactPage.tsx"], caveats: [] },
+          { id: "s-processes", label: "Processes", route: "/processes", page: "src/pages/ProcessesWrapper.tsx",
+            module: "Cross-cutting (Processes)", status: "unclear",
+            purpose: "Process documentation — likely the EOS 'Process' component (documenting core company processes).",
+            desc: "Routes for new (/processes/new), detail (/processes/:id), and edit (/processes/:id/edit). Not listed as a distinct module in module-status.md.",
+            files: ["src/pages/ProcessesWrapper.tsx", "src/pages/ProcessDetail.tsx", "src/pages/ProcessForm.tsx"],
+            caveats: ["Sits in EOS section but no module-status.md entry — verify whether this is the EOS 'Process' surface or a separate one."] },
+        ]
+      },
+      {
+        title: "Resource Management",
+        items: [
+          { id: "s-rh-dash", label: "Content Dashboard", route: "/resource-hub", page: "src/pages/ResourceHubDashboard.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Staff-side admin dashboard for the categorised compliance resource library — templates, checklists, registers, audit evidence, training, guides, CI tools.",
+            desc: "Visible only to Super Admin and Team Leader. Clients consume the equivalent at /client/resource-hub.",
+            files: ["src/pages/ResourceHubDashboard.tsx", "src/components/resource-hub/", "sql-setup/09-resource-hub-schema.sql"], caveats: [] },
+          { id: "s-rh-tmpl", label: "Templates Manager", route: "/resource-hub/templates", page: "src/pages/ResourceCategoryPage.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Manage 'Templates' category resources.",
+            desc: "All category routes share ResourceCategoryPage with a categoryId prop.",
+            files: ["src/pages/ResourceCategoryPage.tsx"], caveats: [] },
+          { id: "s-rh-check", label: "Checklists Manager", route: "/resource-hub/checklists", page: "src/pages/ResourceCategoryPage.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Manage 'Checklists' category resources.", desc: "Same ResourceCategoryPage, categoryId='checklists'.",
+            files: ["src/pages/ResourceCategoryPage.tsx"], caveats: [] },
+          { id: "s-rh-reg", label: "Registers & Forms Manager", route: "/resource-hub/registers-forms", page: "src/pages/ResourceCategoryPage.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Manage 'Registers & Forms' category resources.", desc: "Same ResourceCategoryPage, categoryId='registers-forms'.",
+            files: ["src/pages/ResourceCategoryPage.tsx"], caveats: [] },
+          { id: "s-rh-aud", label: "Audit & Evidence Library", route: "/resource-hub/audit-evidence", page: "src/pages/ResourceCategoryPage.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Manage 'Audit Evidence' category resources.", desc: "Same ResourceCategoryPage, categoryId='audit-evidence'.",
+            files: ["src/pages/ResourceCategoryPage.tsx"], caveats: [] },
+          { id: "s-rh-train", label: "Training & Webinar Library", route: "/resource-hub/training-webinars", page: "src/pages/ResourceCategoryPage.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Manage 'Training & Webinars' category resources.", desc: "Same ResourceCategoryPage, categoryId='training-webinars'.",
+            files: ["src/pages/ResourceCategoryPage.tsx"], caveats: [] },
+          { id: "s-rh-gui", label: "Guides & How-To Library", route: "/resource-hub/guides-howto", page: "src/pages/ResourceCategoryPage.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Manage 'Guides & How-To' category resources.", desc: "Same ResourceCategoryPage, categoryId='guides-howto'.",
+            files: ["src/pages/ResourceCategoryPage.tsx"], caveats: [] },
+          { id: "s-rh-ci", label: "CI Tools Library", route: "/resource-hub/ci-tools", page: "src/pages/ResourceCategoryPage.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Manage 'Continuous Improvement Tools' category resources.", desc: "Same ResourceCategoryPage, categoryId='ci-tools'.",
+            files: ["src/pages/ResourceCategoryPage.tsx"], caveats: [] },
+          { id: "s-rh-upd", label: "Updates Log Manager", route: "/resource-hub/updates", page: "src/pages/ResourceUpdatesLog.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Log of recent additions/changes to the resource hub.",
+            desc: "Distinct page, not a category — also appears as a footer link.",
+            files: ["src/pages/ResourceUpdatesLog.tsx"], caveats: [] },
+        ]
+      },
+      {
+        title: "Administration",
+        items: [
+          { id: "s-tu", label: "Team Users", route: "/admin/team-users", page: "src/pages/TeamUsers.tsx",
+            module: "1. Auth & User Management", status: "live",
+            purpose: "Manage Vivacity staff users (tenant 6372).",
+            desc: "Sub-route /admin/team-users/new-starter is a Super-Admin-only NewStarterWizard for onboarding M365 + invite + role assignment in one flow.",
+            files: ["src/pages/TeamUsers.tsx", "src/pages/admin/NewStarterWizard.tsx"], caveats: [] },
+          { id: "s-ten-u", label: "Tenant Users", route: "/admin/tenant-users", page: "src/pages/TenantUsers.tsx",
+            module: "1. Auth & User Management", status: "live",
+            purpose: "Manage users across all client tenants.",
+            desc: "Cross-tenant view — Vivacity-staff-only.",
+            files: ["src/pages/TenantUsers.tsx"], caveats: [] },
+          { id: "s-invites", label: "Manage Invites", route: "/manage-invites", page: "src/pages/ManageInvitesWrapper.tsx",
+            module: "1. Auth & User Management", status: "live",
+            purpose: "Pending user invitations — issue, resend, cancel.",
+            desc: "Backed by invite-user, resend-invite, cancel-invite, send-invitation-email edge functions.",
+            files: ["src/pages/ManageInvitesWrapper.tsx", "supabase/functions/invite-user/", "supabase/functions/resend-invite/"],
+            caveats: ["Super Admin only."] },
+          { id: "s-uaud", label: "User Audit", route: "/admin/user-audit", page: "src/pages/AdminUserAudit.tsx",
+            module: "1. Auth & User Management", status: "live",
+            purpose: "Audit log of Super Admin actions and user-management events.",
+            desc: "Distinct from the (different) compliance Audits module. Backed by useUserAudit hook.",
+            files: ["src/pages/AdminUserAudit.tsx", "src/hooks/useUserAudit.ts"],
+            caveats: ["Super Admin only."] },
+          { id: "s-alogs", label: "Audit Logs", route: "/audit-logs", page: "(no route registered)",
+            module: "(none)", status: "stub",
+            purpose: "Unknown — sidebar entry has no matching route in src/App.tsx.",
+            desc: "Sidebar links to /audit-logs but the route is not registered, so clicking lands on the catch-all NotFound page.",
+            files: [],
+            caveats: ["DIVERGENCE: sidebar shows this item but no route is wired. Either remove the menu entry or build the page. Verify with Carl."] },
+          { id: "s-emt", label: "Email Templates", route: "/admin/email-templates", page: "src/pages/ManageEmailTemplatesWrapper.tsx",
+            module: "9. Campaigns / Email", status: "partial",
+            purpose: "Admin UI for transactional/automation email templates.",
+            desc: "Mailgun templates live in templates/mailgun/; Supabase auth templates in supabase/email-templates/.",
+            files: ["src/pages/ManageEmailTemplatesWrapper.tsx", "templates/mailgun/", "supabase/email-templates/"],
+            caveats: ["Super Admin only. Broadcast/campaign builder UI is open scope."] },
+        ]
+      },
+      {
+        title: "Academy (Builder)",
+        items: [
+          { id: "s-ac-build", label: "Academy Builder", route: "/superadmin/academy/builder", page: "src/pages/superadmin/AcademyBuilderLibrary.tsx",
+            module: "16. Academy", status: "live",
+            purpose: "Super-admin tool for authoring Academy courses, lessons, assessments.",
+            desc: "Course-level builder at /superadmin/academy/builder/:courseId. Backed by academy-ai-generate edge function and useAcademyEnrollments staff RPCs (fn_academy_enrollment_stats, fn_academy_enrollment_lesson_detail).",
+            files: ["src/pages/superadmin/AcademyBuilderLibrary.tsx", "src/pages/superadmin/AcademyBuilderCourse.tsx", "supabase/functions/academy-ai-generate/"], caveats: [] },
+          { id: "s-ac-rules", label: "Package → Course Rules", route: "/superadmin/academy/package-course-rules", page: "src/pages/superadmin/AcademyPackageCourseRulesPage.tsx",
+            module: "16. Academy", status: "live",
+            purpose: "Define which Academy courses auto-enrol clients on a given package.",
+            desc: "Backed by fn_academy_rule_dashboard_stats RPC (active rules / mappings / auto-enrolments / unmapped packages).",
+            files: ["src/pages/superadmin/AcademyPackageCourseRulesPage.tsx"], caveats: [] },
+        ]
+      },
+      {
+        title: "System Config",
+        items: [
+          { id: "s-pkgs", label: "Manage Packages", route: "/admin/manage-packages", page: "src/pages/PackageBuilder.tsx",
+            module: "5. Packages / Pipeline Stages", status: "live",
+            purpose: "Author and edit the master Package definitions (catalog).",
+            desc: "Distinct from /manage-packages (per-client view). PackageBuilderDetail at /admin/package-builder/:id.",
+            files: ["src/pages/PackageBuilder.tsx", "src/pages/PackageBuilderDetail.tsx"],
+            caveats: ["Super Admin only."] },
+          { id: "s-stages", label: "Manage Stages", route: "/admin/stages", page: "src/pages/AdminManageStagesWrapper.tsx",
+            module: "5. Packages / Pipeline Stages", status: "live",
+            purpose: "Manage the master Stage catalogue (the stages table — the authoritative one, not deprecated documents_stages).",
+            desc: "Detail at /admin/stages/:stage_id. See docs/stage-registry.md for schema.",
+            files: ["src/pages/AdminManageStagesWrapper.tsx", "docs/stage-registry.md"],
+            caveats: ["Super Admin only. documents_stages is deprecated — do not reference it."] },
+          { id: "s-stage-bld", label: "Stage Builder", route: "/admin/stage-builder", page: "src/pages/StageBuilder.tsx",
+            module: "5. Packages / Pipeline Stages", status: "live",
+            purpose: "Authoring tool for stage definitions (versus the management list above).",
+            desc: "Builder vs manager split — likely the new authoring UI, with /admin/stages as the read/list surface.",
+            files: ["src/pages/StageBuilder.tsx"], caveats: ["Super Admin only."] },
+          { id: "s-stage-an", label: "Stage Analytics", route: "/admin/stage-analytics", page: "src/pages/AdminStageAnalytics.tsx",
+            module: "5. Packages / Pipeline Stages", status: "live",
+            purpose: "Cross-tenant analytics on stage progression, health, and completeness.",
+            desc: "Likely backed by run-stage-health-monitor and calculate-phase-completeness edge functions.",
+            files: ["src/pages/AdminStageAnalytics.tsx", "supabase/functions/run-stage-health-monitor/"],
+            caveats: ["Super Admin only."] },
+          { id: "s-eos-proc", label: "EOS Processes", route: "/admin/eos-processes", page: "src/pages/AdminEOSProcesses.tsx",
+            module: "3. EOS (admin)", status: "unclear",
+            purpose: "Likely admin/template management for the EOS Processes feature.",
+            desc: "Sits in System Config but related to EOS module. No direct module-status.md entry.",
+            files: ["src/pages/AdminEOSProcesses.tsx"],
+            caveats: ["Verify with Carl whether this is template/library management or something else."] },
+          { id: "s-knl", label: "Knowledge Library", route: "/admin/knowledge", page: "src/pages/AdminKnowledgeLibrary.tsx",
+            module: "14. AI / Automation (vector layer)", status: "partial",
+            purpose: "Admin surface for the knowledge corpus that backs vector-search and AI assistants.",
+            desc: "Likely manages embeddings, indexed docs, or knowledge-graph content. Sits alongside vector-search, vector-index-rebuild, query-knowledge-graph edge functions.",
+            files: ["src/pages/AdminKnowledgeLibrary.tsx", "supabase/functions/vector-search/", "supabase/functions/query-knowledge-graph/"],
+            caveats: ["AI module is 🟡 partial — many functions exist, naming/routing of agents undocumented."] },
+          { id: "s-aiast", label: "AI Assistant", route: "/admin/assistant", page: "src/pages/AdminAssistant.tsx",
+            module: "14. AI / Automation", status: "partial",
+            purpose: "AI assistant chat / control surface for staff.",
+            desc: "Likely uses ai-orchestrator, assistant-answer, copilot-chat. LLM gateway is Lovable (gemini-2.5-flash, gemini-3-flash-preview) with OpenAI gpt-4o-mini fallback.",
+            files: ["src/pages/AdminAssistant.tsx", "supabase/functions/ai-orchestrator/", "supabase/functions/assistant-answer/"],
+            caveats: ["Super Admin only. Six named AI agents (Alex/Casey/Morgan/Jordan/Riley/Sam) referenced in old docs are not confirmed as named entities here."] },
+          { id: "s-addin", label: "Add-in Settings", route: "/admin/addin-settings", page: "src/pages/admin/AddinSettings.tsx",
+            module: "15. Integrations (Outlook addin)", status: "live",
+            purpose: "Configure the Outlook add-in (M365) — JWT, capture rules, diagnostics.",
+            desc: "Companion: /admin/addin-diagnostics (AddinDiagnostics). Backed by addin-auth-exchange, addin-email-capture, addin-meeting-capture, etc.",
+            files: ["src/pages/admin/AddinSettings.tsx", "supabase/functions/addin-auth-exchange/"],
+            caveats: ["Super Admin only."] },
+          { id: "s-clickup", label: "ClickUp Mapping", route: "/admin/clickup-mapping", page: "src/pages/admin/ClickUpTenantMapping.tsx",
+            module: "15. Integrations (ClickUp)", status: "live",
+            purpose: "Map Vivacity tenants to ClickUp workspaces for task/time sync.",
+            desc: "Backed by sync-clickup-tasks, sync-clickup-time, fetch-clickup-comments, import-clickup-csv. Bulk CSV import lives at /admin/clickup-import.",
+            files: ["src/pages/admin/ClickUpTenantMapping.tsx", "src/pages/ClickUpImport.tsx"],
+            caveats: ["Super Admin only."] },
+          { id: "s-codet", label: "Code Tables", route: "/admin/code-tables", page: "src/pages/CodeTablesAdmin.tsx",
+            module: "(none in module-status)", status: "unclear",
+            purpose: "Admin surface for system code-table values (lookup lists / enums / dropdown sources).",
+            desc: "Backed by services/codeTablesService.ts. Not called out in module-status.md.",
+            files: ["src/pages/CodeTablesAdmin.tsx", "src/services/codeTablesService.ts"],
+            caveats: ["No module-status entry — verify scope and ownership with Carl."] },
+          { id: "s-life", label: "Lifecycle Checklists", route: "/admin/lifecycle-checklists", page: "src/pages/admin/LifecycleChecklistsAdmin.tsx",
+            module: "(none in module-status)", status: "unclear",
+            purpose: "Admin surface for tenant-lifecycle checklists (likely tied to the tenant-lifecycle edge function).",
+            desc: "Probably manages onboarding/offboarding checklist templates. Not called out in module-status.md.",
+            files: ["src/pages/admin/LifecycleChecklistsAdmin.tsx", "supabase/functions/tenant-lifecycle/"],
+            caveats: ["Super Admin only. Verify product purpose with Carl."] },
+          { id: "s-merge", label: "Merge Field Tags", route: "/admin/merge-field-tags", page: "src/pages/admin/MergeFieldTagsAdmin.tsx",
+            module: "9. Campaigns / Email (likely)", status: "unclear",
+            purpose: "Admin surface for the merge-field/template-tag library used by emails and document generation.",
+            desc: "Sits adjacent to email templates and generate-document edge functions. Not called out in module-status.md.",
+            files: ["src/pages/admin/MergeFieldTagsAdmin.tsx"],
+            caveats: ["Super Admin only. Verify which surfaces consume these tags."] },
+          { id: "s-gov", label: "Governance Documents", route: "/admin/governance-documents", page: "src/pages/admin/GovernanceDocuments.tsx",
+            module: "15. Integrations (SharePoint)", status: "live",
+            purpose: "Admin surface for governance document templates delivered into client SharePoint folders.",
+            desc: "Backed by deliver-governance-document edge function.",
+            files: ["src/pages/admin/GovernanceDocuments.tsx", "supabase/functions/deliver-governance-document/"], caveats: [] },
+          { id: "s-sps", label: "SharePoint Sites", route: "/admin/sharepoint-sites", page: "src/pages/admin/SharePointSitesAdmin.tsx",
+            module: "15. Integrations (SharePoint)", status: "live",
+            purpose: "Configure SharePoint sites used as the document backend for tenants.",
+            desc: "Companion routes: /admin/sharepoint-folder-mapping (folder-to-tenant mapping). Functions: browse-sharepoint-folder, provision-tenant-sharepoint-folder, validate-sharepoint-root-folder, resolve-tenant-folder.",
+            files: ["src/pages/admin/SharePointSitesAdmin.tsx", "src/pages/admin/SharePointFolderMapping.tsx"], caveats: [] },
+        ]
+      },
+    ]
+  },
+
+  client: {
+    surfaceNote: "Shown to client RTO users (any tenant other than Vivacity 6372). Source: src/components/client/ClientSidebar.tsx — wrapped by ClientLayout. Items marked 'admin only' are gated to client-tenant Admin role. Vivacity Academy section appears only when academyAccessEnabled for the tenant.",
+    sections: [
+      {
+        title: "Main",
+        items: [
+          { id: "c-inbox", label: "Inbox", route: "/client/inbox", page: "src/pages/client/ClientInboxWrapper.tsx",
+            module: "6. Client Portal", status: "partial",
+            purpose: "Client-side inbox of incoming items: document requests, notifications, follow-ups from the consultant.",
+            desc: "Distinct from staff /inbox (TeamInboxWrapper).",
+            files: ["src/pages/client/ClientInboxWrapper.tsx"],
+            caveats: ["Client Portal is 🟡 partial — surface exists, scope of 'dedicated portal vs reused admin routes' is still being clarified."] },
+          { id: "c-home", label: "Home", route: "/client/home", page: "src/pages/client/ClientHomeWrapper.tsx",
+            module: "6. Client Portal", status: "partial",
+            purpose: "Client landing page — pulse, next actions, key tiles.",
+            desc: "Pairs with the CompliancePulseBanner shown above the page in ClientLayout.",
+            files: ["src/pages/client/ClientHomeWrapper.tsx", "src/components/client/CompliancePulseBanner.tsx"], caveats: [] },
+          { id: "c-tasks", label: "Tasks", route: "/client/tasks", page: "src/pages/client/ClientTasksWrapper.tsx",
+            module: "8. Tasks (client surface)", status: "live",
+            purpose: "Tasks assigned to the client tenant.",
+            desc: "Client-portal-flavoured task list (the staff equivalent is /tasks).",
+            files: ["src/pages/client/ClientTasksWrapper.tsx"], caveats: [] },
+          { id: "c-pkgs", label: "Packages", route: "/client/packages", page: "src/pages/client/ClientPackagesWrapper.tsx",
+            module: "5. Packages / Pipeline Stages", status: "live",
+            purpose: "The client's own view of their active packages and stage progress.",
+            desc: "Read-only client lens on the same package data the staff Packages surface manages.",
+            files: ["src/pages/client/ClientPackagesWrapper.tsx"], caveats: [] },
+          { id: "c-docs", label: "Documents", route: "/client/documents", page: "src/pages/client/ClientDocumentsWrapper.tsx",
+            module: "7. Documents", status: "partial",
+            purpose: "Client's document library (their tenant-scoped documents).",
+            desc: "Equivalent to /tenant/:tenantId/documents but rendered through the isolated ClientLayout.",
+            files: ["src/pages/client/ClientDocumentsWrapper.tsx"], caveats: [] },
+          { id: "c-files", label: "Files", route: "/client/files", page: "src/pages/client/ClientFilesWrapper.tsx",
+            module: "(none in module-status)", status: "unclear",
+            purpose: "Likely a flat-file/SharePoint-backed file browser, separate from the curated 'Documents' surface.",
+            desc: "No direct module-status.md entry; possibly tied to SharePoint browse functions.",
+            files: ["src/pages/client/ClientFilesWrapper.tsx"],
+            caveats: ["Distinction between Documents (curated) and Files (raw browser?) is not documented — verify with Carl."] },
+        ]
+      },
+      {
+        title: "Vivacity Academy",
+        items: [
+          { id: "c-ac-trainer", label: "Trainer Hub", route: "/academy/trainer", page: "src/pages/client/AcademyTrainerWrapper.tsx",
+            module: "16. Academy", status: "live",
+            purpose: "Role-specific Academy view for Trainers within the client RTO.",
+            desc: "Wrapped in AcademyAccessGate (seat-based gating). Hidden when academyAccessEnabled is false for the tenant.",
+            files: ["src/pages/client/AcademyTrainerWrapper.tsx", "src/components/academy/AcademyAccessGate.tsx"],
+            caveats: ["Confirm seat-access enforcement is RLS-backed (not frontend-only)."] },
+          { id: "c-ac-cm", label: "Compliance Manager", route: "/academy/compliance-manager", page: "src/pages/client/AcademyComplianceManagerWrapper.tsx",
+            module: "16. Academy", status: "live",
+            purpose: "Role-specific Academy view for Compliance Managers.", desc: "Same access-gating as Trainer Hub.",
+            files: ["src/pages/client/AcademyComplianceManagerWrapper.tsx"], caveats: [] },
+          { id: "c-ac-gov", label: "Governance Person", route: "/academy/governance-person", page: "src/pages/client/AcademyGovernancePersonWrapper.tsx",
+            module: "16. Academy", status: "live",
+            purpose: "Role-specific Academy view for Governance personnel.", desc: "Same access-gating.",
+            files: ["src/pages/client/AcademyGovernancePersonWrapper.tsx"], caveats: [] },
+          { id: "c-ac-sso", label: "Student Support Officer", route: "/academy/student-support-officer", page: "src/pages/client/AcademyStudentSupportWrapper.tsx",
+            module: "16. Academy", status: "live",
+            purpose: "Role-specific Academy view for Student Support Officers.", desc: "Same access-gating.",
+            files: ["src/pages/client/AcademyStudentSupportWrapper.tsx"], caveats: [] },
+          { id: "c-ac-aa", label: "Administration Assistant", route: "/academy/administration-assistant", page: "src/pages/client/AcademyAdminAssistantWrapper.tsx",
+            module: "16. Academy", status: "live",
+            purpose: "Role-specific Academy view for Administration Assistants.", desc: "Same access-gating.",
+            files: ["src/pages/client/AcademyAdminAssistantWrapper.tsx"], caveats: [] },
+        ]
+      },
+      {
+        title: "After Academy",
+        items: [
+          { id: "c-rh", label: "Resource Hub", route: "/client/resource-hub", page: "src/pages/client/ClientResourceHubWrapper.tsx",
+            module: "17. Resource Hub", status: "live",
+            purpose: "Client-facing read view of the categorised compliance library.",
+            desc: "Sub-routes /client/resource-hub/:categoryId render specific category pages.",
+            files: ["src/pages/client/ClientResourceHubWrapper.tsx"], caveats: [] },
+          { id: "c-cal", label: "Calendar", route: "/client/calendar", page: "src/pages/client/ClientCalendarWrapper.tsx",
+            module: "13. Booking / Scheduling", status: "partial",
+            purpose: "Client calendar — sessions with the consultant, key dates.",
+            desc: "Client-portal flavoured calendar; legacy ClientCalendarWrapper at top-level is superseded by the /client/* version.",
+            files: ["src/pages/client/ClientCalendarWrapper.tsx"], caveats: [] },
+          { id: "c-not", label: "Notifications", route: "/client/notifications", page: "src/pages/client/ClientNotificationsWrapper.tsx",
+            module: "9. Campaigns / Email (notification pipeline)", status: "partial",
+            purpose: "In-app notification list for the client.",
+            desc: "Backed by generate-notifications + process-notification-outbox pipeline.",
+            files: ["src/pages/client/ClientNotificationsWrapper.tsx", "supabase/functions/generate-notifications/"], caveats: [] },
+          { id: "c-comms", label: "Communications", route: "/client/communications", page: "src/pages/client/ClientCommunicationsWrapper.tsx",
+            module: "9. Campaigns / Email", status: "partial",
+            purpose: "Client-facing log of email/comms exchanged with the consultant.",
+            desc: "Likely surfaces send-stage-email, send-composed-email outputs.",
+            files: ["src/pages/client/ClientCommunicationsWrapper.tsx"], caveats: [] },
+          { id: "c-rep", label: "Reports", route: "/client/reports", page: "src/pages/client/ClientReportsWrapper.tsx",
+            module: "6. Client Portal", status: "partial",
+            purpose: "Client-facing reports — audit, impact, compliance.",
+            desc: "Old docs list audit portal views as live; module-status flags as not visibly scoped in current code.",
+            files: ["src/pages/client/ClientReportsWrapper.tsx"],
+            caveats: ["Audit portal views for clients are listed as open scope in module-status.md."] },
+          { id: "c-team", label: "Team", route: "/client/team", page: "src/pages/client/ClientTeamWrapper.tsx",
+            module: "1. Auth & User Management (client-side)", status: "live",
+            purpose: "Client-tenant Admin manages their own RTO's users (invite, remove, change role).",
+            desc: "adminOnly flag in sidebar — only client Admins (or impersonating Vivacity Super Admins) see this.",
+            files: ["src/pages/client/ClientTeamWrapper.tsx"], caveats: [] },
+          { id: "c-tga", label: "TGA Details", route: "/client/tga", page: "src/pages/client/ClientTgaDetailsWrapper.tsx",
+            module: "15. Integrations (TGA)", status: "live",
+            purpose: "Client's training.gov.au organisational record — RTO scope, status, contacts.",
+            desc: "Backed by search-organisations, get-organisation-details, tga-sync, tga-rto-import etc. See docs/training-gov-au-integration.md.",
+            files: ["src/pages/client/ClientTgaDetailsWrapper.tsx", "docs/training-gov-au-integration.md"], caveats: [] },
+        ]
+      },
+      {
+        title: "Footer (action buttons)",
+        items: [
+          { id: "c-help", label: "Help", route: "(opens help-center drawer)", page: "src/components/help-center/",
+            module: "14. AI / Automation", status: "live",
+            purpose: "Open the help-center chatbot drawer.",
+            desc: "Backed by help-center-chat edge function. Not a route — a button.",
+            files: ["src/components/help-center/", "supabase/functions/help-center-chat/"], caveats: [] },
+          { id: "c-csc", label: "Message CSC", route: "(opens DocumentRequestModal)", page: "src/components/client/DocumentRequestModal.tsx",
+            module: "6. Client Portal", status: "live",
+            purpose: "Open a document-request modal — Client Service Centre messaging.",
+            desc: "Not a route; opens a modal via useClientRequestActions.",
+            files: ["src/components/client/DocumentRequestModal.tsx", "src/hooks/useClientRequestActions.ts"], caveats: [] },
+          { id: "c-sup", label: "Support", route: "(opens help-center drawer)", page: "src/components/help-center/",
+            module: "Cross-cutting", status: "live",
+            purpose: "Open the help-center support tab.",
+            desc: "Same drawer as Help, different default tab.",
+            files: ["src/components/help-center/"], caveats: [] },
+        ]
+      }
+    ]
+  }
+};
+
+// --------------------------------------------------------------------
+// Render
+// --------------------------------------------------------------------
+const sidebarEl = document.getElementById("sidebar");
+const panelEl = document.getElementById("panel");
+const tabs = document.querySelectorAll(".tab");
+
+let currentSurface = "staff";
+let currentItemId = null;
+
+function statusLabel(s) {
+  return ({ live: "Live", partial: "Partial", notstarted: "Not started",
+    stub: "Stub — not implemented", unclear: "Purpose unclear — verify with Carl" })[s] || s;
+}
+
+function renderSidebar(surface) {
+  const data = DATA[surface];
+  let html = `<div class="sidebar-header">${surface === "staff" ? "Vivacity Team" : "Client Portal"}</div>`;
+  html += `<div class="surface-note">${data.surfaceNote}</div>`;
+  data.sections.forEach(section => {
+    html += `<div class="section-title">${section.title}</div>`;
+    section.items.forEach(item => {
+      html += `
+        <div class="nav-item" data-id="${item.id}">
+          <span class="dot ${item.status}"></span>
+          <span class="label">${item.label}</span>
+        </div>`;
+    });
+  });
+  sidebarEl.className = surface === "staff" ? "staff" : "client";
+  sidebarEl.innerHTML = html;
+  sidebarEl.querySelectorAll(".nav-item").forEach(el => {
+    el.addEventListener("click", () => selectItem(el.dataset.id));
+  });
+}
+
+function findItem(id) {
+  for (const surface of ["staff", "client"]) {
+    for (const section of DATA[surface].sections) {
+      const found = section.items.find(i => i.id === id);
+      if (found) return { surface, section, item: found };
+    }
+  }
+  return null;
+}
+
+function selectItem(id) {
+  currentItemId = id;
+  sidebarEl.querySelectorAll(".nav-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.id === id);
+  });
+  const found = findItem(id);
+  if (!found) { panelEl.innerHTML = ""; return; }
+  const { section, item } = found;
+  const filesHtml = item.files.length
+    ? `<ul>${item.files.map(f => `<li>${f}</li>`).join("")}</ul>`
+    : `<p style="color:var(--ink-mute);font-size:13px;margin:4px 0 14px">— none —</p>`;
+  const cavHtml = item.caveats.length
+    ? `<ul>${item.caveats.map(c => `<li>${c}</li>`).join("")}</ul>`
+    : `<p style="color:var(--ink-mute);font-size:13px;margin:4px 0 0">No caveats noted.</p>`;
+  const divergence = item.caveats.find(c => c.startsWith("DIVERGENCE"));
+  panelEl.innerHTML = `
+    <div class="crumb">${currentSurface === "staff" ? "Staff" : "Client"} &rsaquo; ${section.title}</div>
+    <h2>${item.label} <span class="pill ${item.status}">${statusLabel(item.status)}</span></h2>
+    <div class="purpose"><strong>Why it exists.</strong> ${item.purpose}</div>
+    ${divergence ? `<div class="divergence"><strong>Code/KB divergence.</strong> ${divergence.replace(/^DIVERGENCE:\s*/, "")}</div>` : ""}
+    <p class="desc">${item.desc}</p>
+    <dl class="meta">
+      <dt>Route</dt><dd><code>${item.route}</code></dd>
+      <dt>Page</dt><dd><code>${item.page}</code></dd>
+      <dt>Module</dt><dd>${item.module}</dd>
+    </dl>
+    <h3>Key files</h3>
+    <div class="files">${filesHtml}</div>
+    <h3>Caveats &amp; gotchas</h3>
+    <div class="caveats">${cavHtml}</div>
+  `;
+}
+
+function selectFirst() {
+  const first = DATA[currentSurface].sections[0].items[0];
+  selectItem(first.id);
+}
+
+tabs.forEach(t => {
+  t.addEventListener("click", () => {
+    tabs.forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    currentSurface = t.dataset.surface;
+    renderSidebar(currentSurface);
+    selectFirst();
+  });
+});
+
+renderSidebar(currentSurface);
+selectFirst();
+</script>
+</body>
+</html>
