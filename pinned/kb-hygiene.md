@@ -26,15 +26,20 @@ unicorn-kb/           ← team KB. This repo.
   ├── codebase-state/ ← fetched via GitHub MCP; as-shipped state of <codebase>/
   └── handoffs/       ← scenario-specific procedures
 
-unicorn-audit/        ← Carl's narrative audit trail. Not team-visible.
-  └── audits/         ← one markdown file per audit event
+unicorn-audit/        ← Carl's narrative audit trail.
+                        Public repo on GitHub (ComplyHub-ai/unicorn-audit),
+                        readable to anyone in the org via GitHub MCP.
+                        Authored only by Carl.
+  └── audit/          ← one markdown file per audit event
 ```
 
 **Why split.** Pinning the full KB to every chat wastes context on content
 most chats don't need. Pinning only the stable opinion layer and fetching
 the rest on demand keeps signal density high. The audit repo is Carl's
 tool for recording "what I reconciled, when, why" — it belongs separate
-so it doesn't pollute the team KB.
+so it doesn't pollute the team KB. It is readable but not routed to in
+chat (audit is historical narrative, not a current-state source — see
+"Source precedence" below).
 
 **Why codebase-state lives in `unicorn-kb/`, not `<codebase>/`.** Lovable
 controls `<codebase>/`. Dropping docs into that repo risks Lovable editing,
@@ -99,7 +104,7 @@ One fact lives in one place. Duplicates are bugs.
 | File paths / where things live | `codebase-state/codebase-map.md` |
 | As-shipped system architecture | `codebase-state/architecture.md` |
 | Actual code behaviour | `<codebase>/` source via GitHub MCP (ground truth) |
-| Audit narrative | `unicorn-audit/audits/*.md` |
+| Audit narrative | `unicorn-audit/audit/*.md` (read-only context; not part of source precedence) |
 
 ---
 
