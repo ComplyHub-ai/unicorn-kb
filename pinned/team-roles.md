@@ -74,15 +74,13 @@ Per occupant. Marked at the person level because tool access varies by individua
 |---|---|---|---|---|---|---|
 | Claude.ai (Unicorn project) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Claude Code | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Lovable | ✅ | ? | ✅ | ✅ (access, doesn't use) | ✅ | ❌ |
+| Lovable | ✅ | ✅ | ✅ | ✅ (access, doesn't use) | ✅ | ❌ |
 | GitHub MCP read | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | GitHub MCP write | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `<codebase>/` commit (via Lovable) | ✅ | ? | ✅ | ❌ (doesn't use) | ✅ | ❌ |
+| `<codebase>/` commit (via Lovable) | ✅ | ✅ | ✅ | ❌ (doesn't use) | ✅ | ❌ |
 | `unicorn-kb/` commit (via Claude Code) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `unicorn-audit/` access | ❌ | ✅ (sole) | ❌ | ❌ | ❌ | ❌ |
 | Supabase console | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-
-> Carl: confirm/correct your own Lovable access (currently `?`) and update the `<codebase>/` row accordingly before merging.
 
 **GitHub MCP write path.** The GitHub MCP connector in claude.ai chat is configured with a **read-only PAT by design** — chat users cannot open PRs through it, even for `unicorn-kb/`. Writes happen exclusively from Claude Code sessions, which use local `gh`/git credentials. This is intentional — it keeps the chat connector's blast radius small. Verified 2026-04-27.
 
