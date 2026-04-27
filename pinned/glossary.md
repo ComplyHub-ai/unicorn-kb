@@ -69,7 +69,7 @@ Australian vocational education compliance context. Vivacity's client base is RT
 | **Wrapper** | A page component variant (e.g. `ManageUsersWrapper`) that handles layout + auth chrome around a pure page component. Routed from `App.tsx`. |
 | **Lovable** | The AI-assisted UI builder hosting the frontend. Connected to the GitHub repo. UI-layer only — schema goes through RJ. |
 | **Awesomate** | Australian-hosted n8n — the automation layer target. Referenced in sibling-project docs; not currently wired into this codebase. |
-| **CLO** | Compliance Lead Officer. A Vivacity staff role that owns the compliance work for a client engagement. Appears in Unicorn 1.0 as `package_instances.clo_id` (bigint, see [07-migration-map.md → Unicorn 1.0 user ID bridge](07-migration-map.md#unicorn-10-user-id-bridge-open)). Confirm with RJ how CLO assignment is modelled in 2.0 — it may be encoded via `unicorn_role` + tenant membership rather than a dedicated FK. |
+| **CLO** | Compliance Lead Officer. A Vivacity staff role that owns the compliance work for a client engagement. Appears in Unicorn 1.0 as `package_instances.clo_id` (bigint, see [migration-1to2.md → Unicorn 1.0 user ID bridge](../reference/migration-1to2.md#unicorn-10-user-id-bridge-open)). Confirm with RJ how CLO assignment is modelled in 2.0 — it may be encoded via `unicorn_role` + tenant membership rather than a dedicated FK. |
 | **`dd_` prefix** | Data-dictionary / lookup table prefix from Unicorn 1.0 (e.g. `dd_document_categories`, `dd_fields`). Marks low-row-count reference tables. The 2.0 equivalents live behind `/manage-categories` and `/manage-fields`. |
 
 ---
@@ -79,13 +79,13 @@ Australian vocational education compliance context. Vivacity's client base is RT
 | Term | Meaning in this repo |
 |---|---|
 | **shadcn-ui** | The component library in `src/components/ui/`. Owned-source Radix primitives with Tailwind. |
-| **RLS** | Row Level Security. Postgres feature used for all tenant isolation. See [02-system-design.md](02-system-design.md#rls). |
+| **RLS** | Row Level Security. Postgres feature used for all tenant isolation. See [conventions.md](conventions.md#rls). |
 | **Edge Function** | A Deno-based TypeScript function deployed on Supabase's infrastructure. Used for anything requiring server-side privilege or external API calls. |
 | **Service role** | A Supabase API key that bypasses RLS. Used in edge functions. Must never be exposed to the frontend. |
 | **pg_cron** | Postgres extension for scheduled jobs. ✅ Deployed in this project — extension enabled in migration `20260209232822` and one job confirmed: `seed-compliance-tasks-nightly` runs daily at 2am AEST. |
 | **Realtime channel** | A Supabase Postgres changes subscription over WebSocket. Used for live meeting sync. |
 | **Query key** | react-query cache identifier. Convention: `[domain, subentity, ...args]`. |
-| **Template / Instance** | A modelling pattern inherited from Unicorn 1.0: a low-row-count "template" table (e.g. `documents`, `emails`) paired with a high-row-count "instance" table (e.g. `document_instances`, `email_instances`) that materialises the template per stage / engagement. See [02-system-design.md → Template → instance pattern](02-system-design.md#template--instance-pattern-inherited-from-unicorn-10) and [07-migration-map.md → Unicorn 1.0 data model reference](07-migration-map.md#unicorn-10-data-model-reference). |
+| **Template / Instance** | A modelling pattern inherited from Unicorn 1.0: a low-row-count "template" table (e.g. `documents`, `emails`) paired with a high-row-count "instance" table (e.g. `document_instances`, `email_instances`) that materialises the template per stage / engagement. See [conventions.md → Template → instance pattern](conventions.md#template--instance-pattern-inherited-from-unicorn-10) and [migration-1to2.md → Unicorn 1.0 data model reference](../reference/migration-1to2.md#unicorn-10-data-model-reference). |
 
 ---
 
@@ -94,7 +94,7 @@ Australian vocational education compliance context. Vivacity's client base is RT
 | Abbrev | Meaning |
 |---|---|
 | AEST | Australian Eastern Standard Time |
-| ADR | Architecture Decision Record (see [06-decision-trail.md](06-decision-trail.md)) |
+| ADR | Architecture Decision Record (see [decision-trail.md](../reference/decision-trail.md)) |
 | CLO | Compliance Lead Officer (see Product-internal terminology) |
 | RLS | Row Level Security |
 | RPC | Remote Procedure Call (here: Postgres function invoked via Supabase) |
