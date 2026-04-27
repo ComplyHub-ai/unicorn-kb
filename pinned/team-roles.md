@@ -1,6 +1,6 @@
 # Team Roles & Tool Access
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-07-27 · **Confidence:** high — reflects the seat-centric model agreed in the 2026-04-27 restructure session.
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-07-27 · **Confidence:** high — reflects the seat-centric model agreed in the 2026-04-27 restructure session; audit-repo read access added 2026-04-28.
 >
 > Vivacity has two products: Unicorn and ComplyHub. This KB covers Unicorn. Roles below describe **seats** (responsibilities), not people — the same person may sit in multiple seats. See "People → seat mapping" for who sits where today.
 
@@ -79,10 +79,18 @@ Per occupant. Marked at the person level because tool access varies by individua
 | GitHub MCP write | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `<codebase>/` commit (via Lovable) | ✅ | ✅ | ✅ | ❌ (doesn't use) | ✅ | ❌ |
 | `unicorn-kb/` commit (via Claude Code) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `unicorn-audit/` access | ❌ | ✅ (sole) | ❌ | ❌ | ❌ | ❌ |
+| `unicorn-audit/` read | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `unicorn-audit/` write | ❌ | ✅ (sole) | ❌ | ❌ | ❌ | ❌ |
 | Supabase console | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
 **GitHub MCP write path.** The GitHub MCP connector in claude.ai chat is configured with a **read-only PAT by design** — chat users cannot open PRs through it, even for `unicorn-kb/`. Writes happen exclusively from Claude Code sessions, which use local `gh`/git credentials. This is intentional — it keeps the chat connector's blast radius small. Verified 2026-04-27.
+
+**`unicorn-audit/` read access.** The repo is public on GitHub
+(`ComplyHub-ai/unicorn-audit`); anyone with GitHub MCP configured can
+fetch its contents. Authorship is Carl-only — no PRs accepted from
+others. Audit is not part of source precedence (see
+`pinned/kb-hygiene.md`); it's available for "why did we end up here"
+historical context, not for resolving current-state questions.
 
 **`<codebase>/` access.** Lovable users push direct to `main` from the Lovable UI. Claude Code is forbidden from writing to `<codebase>/` per `~/repository/unicorn-workspace/CLAUDE.md → Write permissions` regardless of who's running it.
 
