@@ -1,6 +1,8 @@
 # Architecture
 
-> **Last updated:** 2026-04-23 · **Reconsider by:** 2026-07-23 · **Confidence:** medium-high — tenant ID, EOS table names, pg_cron, and LLM provider verified in codebase (April 2026 audit).
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-07-27 · **Confidence:** medium-high — tenant ID, EOS table names, pg_cron, and LLM provider verified in codebase (April 2026 audit).
+>
+> **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25). Edge function count unchanged at 117 over the past week (a `create-client-audit` function landed on `65c426aa` and was reverted same-day on `084a5e17`). Three new RPC migrations added — see Helper functions section.
 >
 > System design reference for Unicorn 2.0. How everything connects, where logic lives, and the constraints to respect.
 > Reconciled against the `unicorn-cms-f09c59e5` working tree — April 2026. Note: a separate Vivacity Supabase project previously shared the "Unicorn 2.0" name but had different edge functions and module scope. That sibling project is now largely superseded — this doc describes the current codebase.
@@ -195,6 +197,13 @@ Every tenant-scoped row carries `tenant_id: int`. Tenant `6372` is Vivacity (sta
 - `is_superadmin()` — current user's `unicorn_role = 'Super Admin'`
 - `current_tenant()` — user's active tenant
 - `set_active_tenant(tenant_id)` — Vivacity Super Admins can switch context
+- `fn_package_stream(p_package_id)` (added 2026-04-23, migration `20260423093423_…`) — derives a regulatory-stream tag (`'rto' | 'cricos' | 'gto' | 'generic'`) from a package's name/slug. Used by the updated `start_client_package` RPC to enforce a duplicate-stream guard.
+
+**Staff-only Academy admin RPCs (added 2026-04-21, all gated by `is_vivacity()`):**
+- `fn_academy_enrollment_stats()` → `jsonb` of six dashboard tiles (total/active/completed/expired/revoked/auto_lifetime).
+- `fn_academy_enrollment_lesson_detail(p_enrollment_id bigint)` → per-enrolment lesson progress rows.
+- `fn_academy_rule_dashboard_stats()` → package-rule dashboard counts (active rules / total mappings / auto-enrolments / unmapped packages).
+- Migrations: `20260421082533_da37ce62-…sql`, `20260421085406_b2a157f8-…sql`. Surfaced in [src/pages/superadmin/AcademyEnrolmentsPage.tsx](../src/pages/superadmin/AcademyEnrolmentsPage.tsx) via [src/hooks/academy/useAcademyEnrollments.ts](../src/hooks/academy/useAcademyEnrollments.ts).
 
 **Edge function auth note:** Edge functions do NOT call `is_vivacity()` directly. They check the `is_vivacity_internal` boolean column on the `users` table (e.g. `.select('is_vivacity_internal')`), or use the `is_vivacity_staff` RPC (`supabase.rpc('is_vivacity_staff', {p_user: userId})`). The `has_tenant_access_safe` RPC handles tenant membership checks in shared addin auth (`_shared/addin-auth.ts`). The canonical pattern in `02-system-design.md` covers the simplified form; real functions vary.
 
