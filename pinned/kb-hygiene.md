@@ -211,7 +211,7 @@ Audits are **ad-hoc** — triggered by drift surfacing, not by calendar. But
 shelf-life dates provide a passive trigger: when Claude flags a
 past-shelf-life citation in a chat, that's the nudge to review.
 
-**Heuristic triggers for an audit** (i.e. open `unicorn-audit/audits/YYYY-MM-DD-<slug>.md`):
+**Heuristic triggers for an audit** (i.e. open `unicorn-audit/audit/YYYY-MM-DD-<slug>.md`):
 - Lovable does a remix → always trigger ([../handoffs/post-lovable-remix.md](../handoffs/post-lovable-remix.md))
 - Claude flags drift between KB and codebase in a chat
 - An Open Decision older than 90 days surfaces
