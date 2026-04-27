@@ -13,7 +13,6 @@
 | If you… | Use |
 |---|---|
 | Were brainstorming in claude.ai, reached a decision, now need to implement or record | [claude-project-to-claude-code.md](claude-project-to-claude-code.md) |
-| Just finished a Claude Code session and want to capture what changed for the KB | [claude-code-to-claude-project.md](claude-code-to-claude-project.md) |
 | Are pulling in a feature Lovable shipped to `<codebase>/` | [lovable-to-codebase.md](lovable-to-codebase.md) |
 | Are reconciling after a Lovable remix (Carl only) | [post-lovable-remix.md](post-lovable-remix.md) |
 | Are a non-technical stakeholder with a KB proposal | [non-technical-proposal.md](non-technical-proposal.md) |

@@ -47,7 +47,7 @@ whenever the codebase changes (see `../handoffs/post-lovable-remix.md`).
 | Pinned | `pinned/` | orientation, conventions, decisions (index), team-roles, glossary, kb-hygiene | Every turn |
 | Reference | `reference/` | flow-patterns, decision-trail, brainstorm-log, migration-1to2, cadence, source-precedence | On demand, via GitHub MCP |
 | Codebase state | `codebase-state/` | module-status, codebase-map, architecture | On demand, via GitHub MCP |
-| Handoffs | `handoffs/` | README + 5 scenario files | On demand, via GitHub MCP |
+| Handoffs | `handoffs/` | README + 4 scenario files | On demand, via GitHub MCP |
 | Source code | `<codebase>/` (separate repo) | the actual codebase | On demand, via GitHub MCP |
 
 The routing rules for Claude live in the Claude Project's custom

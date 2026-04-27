@@ -43,7 +43,6 @@ stabilises.
 | Handoff | Angela | RJ | Khian | Carl | Dave | Non-technical |
 |---|---|---|---|---|---|---|
 | [claude-project-to-claude-code.md](../handoffs/claude-project-to-claude-code.md) | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [claude-code-to-claude-project.md](../handoffs/claude-code-to-claude-project.md) | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | [lovable-to-codebase.md](../handoffs/lovable-to-codebase.md) | ✅ | ✅ | ? | ? | ? | ❌ |
 | [post-lovable-remix.md](../handoffs/post-lovable-remix.md) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [non-technical-proposal.md](../handoffs/non-technical-proposal.md) | Process as recipient | ❌ | ❌ | ❌ | ❌ | ✅ (author) |
