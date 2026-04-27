@@ -59,7 +59,7 @@ Australian vocational education compliance context. Vivacity's client base is RT
 | **Tenant** | An organisation account in Unicorn. Every business-domain row is scoped to a tenant. |
 | **Tenant 6372** | The magic ID. Hardcoded as the Vivacity staff tenant (`VIVACITY_TENANT_ID = 6372` in `invite-user/index.ts` and exported from `useVivacityTeamUsers.tsx`). |
 | **Vivacity staff** | Users belonging to tenant 6372. Roles: Super Admin, Team Leader, Team Member. Can access all tenants via `is_vivacity()` in RLS (or `is_vivacity_internal` column check in edge functions). |
-| **Client / Client RTO** | A tenant other than 319. Roles: Admin, User. Access scoped to own tenant by default. |
+| **Client / Client RTO** | A tenant other than 6372. Roles: Admin, User. Access scoped to own tenant by default. |
 | **Unicorn 1.0** | The legacy operating stack being replaced: old Vivacity CMS + Keap + OnceHub + spreadsheets. Not a single codebase. |
 | **Unicorn 2.0** | This codebase. The rebuild — React + Supabase, EOS-first. |
 | **Sibling project** | A separate Vivacity Supabase project that also carries the "Unicorn 2.0" name but has different edge functions, module scope, and RLS helper names. Historical context only — not this codebase. |
