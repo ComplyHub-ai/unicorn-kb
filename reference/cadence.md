@@ -1,6 +1,6 @@
 # Engineering Cadence
 
-> **Last updated:** 2026-04-23 · **Reconsider by:** 2026-05-23 · **Confidence:** low-medium — cadence inferred from EOS methodology + recent git log; RJ's actual planning process may differ and should be captured here.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-07-27 · **Confidence:** medium — review-gate claims corrected 2026-04-27 to match operating-model ADR-011; some sections (recent themes, roadmap buckets) remain inferred from git log and may be stale. Estimating section assumes hand-written code; Lovable estimates differ.
 >
 > The engineering team's working rhythm on Unicorn 2.0, the current roadmap, and the shape of what's in flight. Vivacity runs on EOS, so the engineering team uses the same vocabulary — Rocks, To-Dos, Issues, IDS — rather than Scrum sprints. This doc reflects that.
 
@@ -74,9 +74,9 @@ Read the signal: this isn't a net-new-features week, it's stabilisation work. Do
 When picking up a ticket:
 
 1. **Is the goal clear?** If not, write the acceptance criteria down before touching code.
-2. **Does it affect the data model?** If yes, it goes through RJ before any migration runs.
+2. **Does it affect the data model?** If you're hand-writing it, write the migration deliberately — there is no review gate (see `decision-trail.md → ADR-011`). If Lovable is generating it, the migration lands automatically; flag anything risky in `brainstorm-log.md` post-merge.
 3. **Does it involve an AI call?** Must be an edge function. No exceptions.
-4. **Does it touch RLS?** Apply the three-step ritual ([02-system-design.md](02-system-design.md#new-table-checklist)).
+4. **Does it touch RLS?** Apply the three-step ritual (`pinned/conventions.md → New table checklist`). Lovable-generated migrations may or may not include all three steps; check post-merge.
 5. **Does it add a page?** Follow the Wrapper convention. Add the route to `App.tsx` **above** the catch-all.
 6. **Does it add a third-party dependency?** Check existing deps first; if genuinely needed, record the decision.
 7. **Is there a test plan?** Even a manual one. UI work in Lovable is easy to regress.
@@ -84,8 +84,8 @@ When picking up a ticket:
 When closing a ticket:
 
 1. **Does the PR description explain the *why*, not just the *what*?**
-2. **If this is a new convention, did it land in [02-system-design.md](02-system-design.md)?**
-3. **If this reversed a prior decision, did it land in [05-product-decisions.md](05-product-decisions.md)?**
+2. **If this is a new convention, did it land in `pinned/conventions.md`?**
+3. **If this reversed a prior decision, did it land in `pinned/decisions.md` + `reference/decision-trail.md`?**
 
 ---
 
@@ -115,12 +115,14 @@ Rules of thumb:
 
 ## What to escalate vs. decide yourself
 
-**Escalate to RJ:**
-- Any schema change
-- Any cross-tenant data access pattern
+**No synchronous gate exists today** (see `decision-trail.md → ADR-011`). For decisions that warrant deliberation rather than just being dropped into Lovable:
+
+- Schema changes affecting cross-tenant access patterns
 - Security-sensitive flows (auth, invites, role changes)
-- Hardcoded constants beyond `319 = Vivacity`
-- Anything that might touch production data
+- Hardcoded constants beyond `6372 = Vivacity`
+- Anything that touches production data destructively
+
+**Path:** flag in `reference/brainstorm-log.md` or open an Issue in EOS, and tag Carl. Lovable-generated changes that fall in these categories also land — flag them post-merge so the team is aware.
 
 **Decide yourself:**
 - Component structure (following existing conventions)
@@ -129,16 +131,16 @@ Rules of thumb:
 - Test approach
 - PR scope / splitting
 
-When in doubt: check [05-product-decisions.md → Open Decisions](05-product-decisions.md#open-decisions). If it's there, it's not yet decided — don't get ahead of it.
+When in doubt: check `pinned/decisions.md → Open Decisions`. If it's there, it's not yet decided — don't get ahead of it.
 
 ---
 
 ## Shipping discipline
 
-- No force-pushing to `main`.
+- No force-pushing to `main` (humans/Claude Code; Lovable's direct-to-`main` is the one authorized exception).
 - Don't amend merged commits.
 - Pre-commit hooks exist — don't bypass them with `--no-verify`.
-- RLS changes require RJ sign-off before migration runs in production.
+- There is no RLS sign-off gate today (see `decision-trail.md → ADR-011`). When hand-writing migrations via Claude Code, self-review the three-step ritual against `pinned/conventions.md → New table checklist`. Lovable-generated migrations land without review.
 - UI changes should be smoke-tested in a browser before marked done.
 
 ---
@@ -147,17 +149,17 @@ When in doubt: check [05-product-decisions.md → Open Decisions](05-product-dec
 
 | Work type | Done means |
 |---|---|
-| UI feature | Browser-tested golden path + one edge case + code reviewed |
+| UI feature | Browser-tested golden path + one edge case. No mandatory code review per ADR-011 — self-review applies. |
 | Edge function | Deployed, invocation tested from the frontend, all error codes documented in [docs/INVITE_USER_DIAGNOSTICS.md](../docs/INVITE_USER_DIAGNOSTICS.md) or equivalent |
-| Schema change | Migration merged, RLS verified enabled, RJ signed off, dependent features still work |
+| Schema change | Migration merged, RLS verified enabled (when hand-written), dependent features still work. No sign-off gate per ADR-011. |
 | Bug fix | Root cause identified (not just symptom patched), regression test or documented repro |
-| Docs / convention update | Landed in the right Claude Project file (this folder) |
+| Docs / convention update | Landed in the right `unicorn-kb/` file |
 
 ---
 
 ## Open process questions
 
 - How are we tracking design debt? Currently: Issues in the EOS board. Is that sustainable?
-- Is there a staging environment? (Open decision — see [05-product-decisions.md](05-product-decisions.md#open-decisions).)
+- Is there a staging environment? (Open decision — see `pinned/decisions.md → Open Decisions`.)
 - When do we start enforcing test coverage? Currently: none.
 - Should we adopt a lightweight issue tracker (Linear) for engineering work not suitable for EOS Issues?

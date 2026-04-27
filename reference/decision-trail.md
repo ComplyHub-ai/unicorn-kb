@@ -1,6 +1,6 @@
 # Decision Trail (ADRs)
 
-> **Last updated:** 2026-04-23 · **Reconsider by:** 2027-04-23 · **Confidence:** medium — ADR-003 tenant ID corrected to 6372 (April 2026 audit). ADRs 001–004 and 006–010 are reconstructed from code and sibling-project docs; ADR-005 and ADR-008 are verbatim from sibling-project incidents and may or may not have occurred identically here. RJ should review before treating as canonical.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2027-04-27 · **Confidence:** medium — ADR-003 tenant ID corrected to 6372 (April 2026 audit). ADRs 001–004 and 006–010 are reconstructed from code and sibling-project docs; ADR-005 and ADR-008 are verbatim from sibling-project incidents and may or may not have occurred identically here. ADR-011 added 2026-04-27 to document the current operating model (no peer review; Lovable owns schema in practice). RJ should review legacy ADRs before treating as canonical; ADR-011 is canonical for current state.
 >
 > Architecture Decision Records for Unicorn 2.0.
 > Purpose: preserve the *why* behind each decision so it isn't re-litigated, create a defensible paper trail, and give future devs (and Claude) context for judgment calls.
@@ -198,6 +198,57 @@ Several ADRs below are carried forward from a sibling Vivacity Supabase project 
 - Long-polling: rejected — worse UX.
 **Risks accepted:** Supabase realtime has rate and size limits. For very high-volume events, may need to batch or route through an edge function.
 **Consequences:** Channel cleanup discipline is mandatory. See [03-flow-patterns.md → Real-time subscriptions](03-flow-patterns.md#real-time-subscriptions).
+
+---
+
+### ADR-011: Operating model — Lovable is the workflow; no peer review or sign-off gates {#adr-011}
+**Date:** 2026-04-27
+**Status:** Decided — describes current reality
+**Decided by:** Carl Simpao (project lead + KB owner), with Angela's awareness as product owner
+
+**Context:** The KB previously documented review processes that no longer match how the team works. Earlier ADRs and conventions described:
+
+- ADR-001's risk-mitigation note "Lovable is UI-only, schema goes through RJ"
+- `pinned/conventions.md → Migrations` claiming "RJ reviews before any migration is applied to production"
+- `pinned/orientation.md → Ground rules` item 3 claiming "Lovable never owns schema"
+- `reference/cadence.md → Shipping discipline` claiming "RLS changes require RJ sign-off before migration runs in production"
+- ADR-005's consequence "RJ reviews every migration"
+- `reference/cadence.md → Definitions of done` claiming UI features are "code reviewed" and schema changes require "RJ signed off"
+
+In practice, as of April 2026: Angela and Dave develop predominantly through Lovable, which generates schema migrations alongside frontend code and pushes both direct to `main`. There is no peer review at any layer. There is no schema sign-off. There is no RLS sign-off. The architect seat (formerly RJ's) was retired in the 2026-04-27 seat-centric restructure (`pinned/team-roles.md`); RJ now works primarily on Vivacity's other product, ComplyHub. No replacement gate-keeper was established. Hand-written code via Claude Code lands on feature branches and merges via PR — also without mandatory review.
+
+**Decision:** The KB will document this operating model honestly rather than continue to claim review processes that don't exist. The trade-off — Lovable velocity over schema rigor — is accepted. Failures that result will be traced back to this ADR.
+
+**Reasoning:**
+- **Honesty over aspiration.** A KB that describes a process the team doesn't follow becomes silently wrong over time. Onboarding readers form expectations that reality contradicts. Failure modes get mis-attributed (e.g. "we missed an RLS step" rather than "no review process exists to catch missed RLS steps").
+- **Velocity is the actual constraint.** Vivacity's small team and Lovable's pace are why the company can ship at the rate it does. Adding a synchronous review gate would require either hiring or scope reduction; neither is on the table.
+- **Capturing reality enables future change.** Once this is written down, the team can decide *whether* to add review gates with full information about what's currently absent. Without this ADR, the question keeps surfacing implicitly each time something slips through.
+
+**Alternatives considered:**
+- **Restore the architect-seat review gate.** Rejected — RJ is no longer available for Unicorn review work, and no other team member combines the depth and the bandwidth.
+- **Add async post-merge review by Carl.** Possible future evolution but not adopted now. Would be a follow-up ADR if/when adopted.
+- **Restrict Lovable's schema authority.** Rejected — Lovable generates schema as part of its feature flow; restricting that effectively means hand-writing those features, which contradicts ADR-001's velocity rationale.
+- **Keep claiming the review process exists.** Rejected as actively harmful: it sets onboardees up to fail, mis-attributes incident causes, and erodes trust in the KB.
+
+**Risks accepted:**
+- **Silent RLS failures.** ADR-005 named two failure modes that were caught (on the sibling project) only because someone reviewed the migrations. Without review, those modes can ship undetected. Partial mitigation: RLS issues tend to surface fast — staff get "not found" on every record, or clients see other tenants' data — so the incident is loud, even if pre-merge review is absent.
+- **Convention drift.** `pinned/conventions.md` describes patterns (query keys, edge function structure, coercion triggers) that Lovable doesn't necessarily follow. Hand-written code via Claude Code still aims to match these; Lovable-generated code may not.
+- **No second pair of eyes.** Cross-cutting bugs that span files or require holistic understanding land without review.
+- **Compounding undocumented decisions.** Lovable makes implementation choices (table names, column types, function signatures) without a human deciding them deliberately. These accumulate as facts that nobody chose, only accepted.
+
+**Consequences:**
+- **For the KB:** Cross-references to "RJ reviews migrations," "schema goes through RJ," and "code reviewed" are removed or rewritten as descriptive ("when hand-writing code, follow this pattern") rather than prescriptive ("this is enforced via review"). PR2 makes these edits across `pinned/conventions.md`, `pinned/orientation.md`, and `reference/cadence.md`.
+- **For ADR-001:** The risk-mitigation note "Lovable is UI-only, schema goes through RJ" is no longer in effect. ADR-001's *platform decision* (Lovable + Supabase) stands; only that mitigation is retired.
+- **For ADR-005:** The three-step RLS ritual remains the correct technical pattern. The consequence "RJ reviews every migration" is no longer in effect.
+- **For incident response:** When a production failure traces to a missed RLS step, missed coercion trigger, or any other convention violation — the trace stops here. The cause is "no review process exists"; the fix is either a one-off correction or a follow-up ADR establishing review.
+- **For onboarding:** New readers should expect conventions to be aspirational targets, not enforced rules, for Lovable-generated code.
+
+**Linked to:**
+- ADR-001 (platform decision; Lovable-is-UI-only mitigation retired)
+- ADR-005 (RLS three-step ritual; "RJ reviews every migration" consequence retired)
+- `pinned/team-roles.md → Authority` (no schema/RLS gate today)
+- `pinned/conventions.md → Scope of these conventions` (added in this PR)
+- `reference/cadence.md → Shipping discipline` (review claims removed in this PR)
 
 ---
 

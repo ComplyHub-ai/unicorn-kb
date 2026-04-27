@@ -1,6 +1,6 @@
 # Start Here — Unicorn 2.0
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure; ground rules updated 2026-04-27 to reflect operating-model ADR-011.
 >
 > Shared orientation for the Unicorn 2.0 engineering team. Product overview, mental model, ground rules, and key landmarks. Read this before diving into any other KB file.
 
@@ -86,7 +86,7 @@ Full navigational map: [codebase-map.md](../codebase-state/codebase-map.md).
 
 1. **AI logic → server only.** Never in the frontend. Edge Functions or n8n.
 2. **New tables require the three-step RLS ritual.** Tenant-read SELECT policy + staff ALL policy + `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`. Skipping any one is a silent failure. See [conventions.md](conventions.md#new-table-checklist).
-3. **Lovable never owns schema.** It scaffolds UI only. If Lovable suggests a table, ignore it — schema goes through the senior dev and RJ.
+3. **Lovable owns schema in practice.** Lovable users (Angela, Dave, Khian — see `team-roles.md`) push schema migrations alongside frontend code direct to `main`. There is no pre-merge review or sign-off gate. The three-step RLS ritual (item 2 above) is the *correct* technical pattern, but enforcement is post-merge — see `reference/decision-trail.md → ADR-011` for the operating-model rationale and risk acceptance. Hand-written code via Claude Code lands via PR on a feature branch (also without mandatory review).
 4. **Edge functions validate the caller manually.** Always `supabase.auth.getUser(callerToken)` then check `unicorn_role` / `tenant_id`. The service-role key bypasses RLS, so the function is the only enforcement point.
 5. **Column defaults are not enough.** For NOT NULL columns the frontend may explicitly set to `NULL`, add a coercion trigger. See [decision-trail.md](../reference/decision-trail.md#adr-008).
 
@@ -158,10 +158,10 @@ The team is organised around four **seats** (responsibilities), not titles. The 
 - [ ] Read one edge function front-to-back: [supabase/functions/invite-user/index.ts](../supabase/functions/invite-user/index.ts). It's the canonical service-role pattern.
 - [ ] Read [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md). It's the core product thesis.
 - [ ] Open [module-status.md](../codebase-state/module-status.md) and identify which modules are 🟡 partial — these are the highest-value areas to contribute to.
-- [ ] Ask RJ which open decisions in [decisions.md](decisions.md#open-decisions) are actively blocking work.
+- [ ] Ask Carl which open decisions in [decisions.md](decisions.md#open-decisions) are actively blocking work.
 
 ---
 
 ## Standing questions to always ask
 
-When a decision feels implicit or invisible, it probably *was* implicit. Surface it to RJ and capture it in [decisions.md](decisions.md). This codebase has a history of implicit decisions biting later (RLS incidents, NULL coercion, naming divergence). When in doubt, write it down.
+When a decision feels implicit or invisible, it probably *was* implicit. Surface it to Carl and capture it in [decisions.md](decisions.md). This codebase has a history of implicit decisions biting later (RLS incidents, NULL coercion, naming divergence). When in doubt, write it down.

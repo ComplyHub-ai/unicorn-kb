@@ -1,8 +1,16 @@
 # System Design — Conventions & Patterns
 
-> **Last updated:** 2026-04-23 · **Reconsider by:** 2026-10-23 · **Confidence:** medium-high — canonical patterns derived from invite-user + useAuth; tenant ID corrected to 6372 in April 2026 audit. Edge function auth pattern note added. Template/instance pattern (added 2026-04-23) is descriptive of 1.0 with one confirmed 2.0 use; further extension is open.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — canonical patterns derived from invite-user + useAuth; tenant ID corrected to 6372 in April 2026 audit. Edge function auth pattern note added. Template/instance pattern (added 2026-04-23) is descriptive of 1.0 with one confirmed 2.0 use; further extension is open. **2026-04-27:** scope clarified — these conventions are aspirational targets for hand-written code, not enforced via pre-merge review. See `reference/decision-trail.md → ADR-011`.
 >
 > The "how we do things here" doc. Rules to follow when adding code, with rationale so you can handle edge cases.
+
+---
+
+## Scope of these conventions
+
+These patterns are the target. **They are not enforced via pre-merge review** — see [decision-trail.md → ADR-011](../reference/decision-trail.md#adr-011) for why. When hand-writing code via Claude Code, follow them. Lovable-generated code may not match — flag drift you spot in `reference/brainstorm-log.md`, but don't expect it to be caught at merge time.
+
+The technical patterns below (RLS three-step ritual, edge function auth, coercion triggers) are still **correct** even when not enforced. Self-review against them is the operating discipline.
 
 ---
 
@@ -68,7 +76,7 @@ ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;
 ### Tables that don't need both policies
 
 - **Vivacity-only tables** (e.g., internal staff tools) — only need `is_vivacity()` ALL.
-- **Cross-tenant system tables** (e.g., `tenants` itself) — special-case policies; ask RJ.
+- **Cross-tenant system tables** (e.g., `tenants` itself) — special-case policies; flag in `reference/brainstorm-log.md` and tag Carl.
 
 ### Public helper functions
 Always available in RLS policies:
@@ -246,12 +254,12 @@ This is load-bearing in 1.0 — see [migration-1to2.md → Unicorn 1.0 data mode
 
 In 2.0, `package_stage_instances` follows this pattern (template = `package_stages`, instance = `package_stage_instances`). When designing a new entity that gets materialised per stage / per engagement / per recurrence, prefer this split over a single denormalised table — it keeps reporting and lifecycle hooks composable, and matches the mental model the team already has from 1.0.
 
-Whether to apply this pattern to tasks/emails/documents in 2.0 is an open question — flag to RJ when scoping.
+Whether to apply this pattern to tasks/emails/documents in 2.0 is an open question — flag in `reference/brainstorm-log.md` when scoping.
 
 ### Migrations
 - Files in [supabase/migrations/](../supabase/migrations/) — timestamped, one migration per logical change.
 - Naming: `<timestamp>_<uuid>.sql` (Lovable-generated default).
-- RJ reviews before any migration is applied to production.
+- There is no pre-merge migration review gate today (see `reference/decision-trail.md → ADR-011`). Lovable-generated migrations land direct on `main`; hand-written migrations should be self-reviewed against the New table checklist below.
 - If the migration adds a table with mixed staff+client access, the three-step RLS ritual MUST be in the same migration.
 
 ---
@@ -270,7 +278,6 @@ Before merging a migration that creates a table:
 - [ ] `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` — actually run?
 - [ ] Verified in Supabase Studio that RLS is enabled?
 - [ ] If any NOT NULL columns can receive writes from Lovable forms → coercion trigger added?
-- [ ] RJ has reviewed the migration?
 
 ---
 
@@ -278,7 +285,6 @@ Before merging a migration that creates a table:
 
 - Don't call LLM APIs from the frontend.
 - Don't write RLS policies without enabling RLS.
-- Don't let Lovable scaffold a schema.
 - Don't skip caller validation in an edge function just because "RLS is on" — the service-role key bypasses RLS.
 - Don't cache the Supabase client per-component — use the singleton from `src/integrations/supabase/client.ts`.
 - Don't put tenant-ID checks on the frontend as the only line of defense. RLS first; frontend filters for UX.
