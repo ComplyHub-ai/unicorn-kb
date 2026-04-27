@@ -1,6 +1,6 @@
 # Brainstorm Log
 
-> **Last updated:** 2026-04-23 · **Review by:** 2026-07-23 (items don't expire, but check whether they've moved to decisions or lost relevance) · **Confidence:** n/a — raw thinking, not claims of fact.
+> **Last updated:** 2026-04-27 · **Review by:** 2026-07-27 (items don't expire, but check whether they've moved to decisions or lost relevance) · **Confidence:** n/a — raw thinking, not claims of fact.
 >
 > Raw thinking, half-baked ideas, and explorations. Separate from [05-product-decisions.md](05-product-decisions.md) so that file stays clean. Ideas here are **not** decisions.
 
@@ -17,6 +17,35 @@ Each entry:
 ---
 
 ## Log
+
+### [2026-04-27] — Lovable → KB information capture (experimental)
+
+**Topic:** Whether Lovable users can surface intent / decisions back into the KB through their Lovable prompts — i.e., the prompt becomes the source for an audit-trail entry, brainstorm note, or ADR seed.
+
+**Raw thinking:**
+- Currently `handoffs/lovable-to-codebase.md` is purely KB-owner-side reconciliation. Carl watches `main`, reconciles drift after the fact.
+- Aspiration is two-sided: the Lovable user generates a useful artifact (a one-line note, a brainstorm fragment, an ADR seed) alongside the code change, without extra ceremony.
+- The natural input is the prompt itself — what did the Lovable user *intend* to build, and why?
+- Open questions: how the prompt is captured (paste back into a Claude Project chat? scrape from Lovable history?), what the format is, who owns the parsing/promotion step.
+- Carl is exploring this. Status: experimental, not yet a pattern.
+
+**Outcome:** Parked. Revisit when there's a working approach. If it solidifies, may turn into an extension to `handoffs/lovable-to-codebase.md` and an associated ADR.
+
+---
+
+### [2026-04-27] — Audit-trail access for non-technical KB readers
+
+**Topic:** Should external reviewers / consultants in the Non-technical KB reader seat (see `pinned/team-roles.md`) get read access to `unicorn-audit/`?
+
+**Raw thinking:**
+- `unicorn-audit/` is currently KB-owner-only (Carl). It's the narrative reconciliation log — drift, remix events, what was decided when something went sideways.
+- Argument for opening read access: the audit trail is the most honest record of what's actually happened in the KB. A fresh-eyes reviewer benefits from seeing it.
+- Argument against: it's raw and internal. Meant as Carl's working tool, not a polished surface.
+- Status: parked. No external reviewer is concretely engaged right now, so this stays hypothetical.
+
+**Outcome:** Parked. Revisit when an actual external reviewer is brought in and the question becomes concrete.
+
+---
 
 ### [2026-04-23] — EOS audit report intake (unverified)
 

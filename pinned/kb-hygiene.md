@@ -50,6 +50,8 @@ whenever the codebase changes (see `../handoffs/post-lovable-remix.md`).
 | Handoffs | `handoffs/` | README + 4 scenario files | On demand, via GitHub MCP |
 | Source code | `<codebase>/` (separate repo) | the actual codebase | On demand, via GitHub MCP |
 
+**GitHub MCP connector setup (required for the "fetched" layers).** The GitHub MCP connector in claude.ai chat must be set up per-user before any "fetched on demand" file becomes accessible. Install in claude.ai → Settings → Connectors → GitHub. **Configure with a read-only PAT** — this is intentional; see `pinned/team-roles.md → Tool access matrix → GitHub MCP write path` for why. Writes to `unicorn-kb/` happen exclusively via Claude Code (which uses local `gh`/git credentials).
+
 The routing rules for Claude live in the Claude Project's custom
 instructions. Source-of-truth for routing logic is
 [../reference/source-precedence.md](../reference/source-precedence.md).

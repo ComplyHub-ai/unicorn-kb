@@ -1,6 +1,6 @@
 # Start Here — Unicorn 2.0
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure; ground rules updated 2026-04-27 to reflect operating-model ADR-011.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure; ground rules updated 2026-04-27 to reflect operating-model ADR-011; non-technical reader sections added 2026-04-27.
 >
 > Shared orientation for the Unicorn 2.0 engineering team. Product overview, mental model, ground rules, and key landmarks. Read this before diving into any other KB file.
 
@@ -23,6 +23,15 @@
 - Ad-hoc spreadsheets for EOS meeting tracking
 
 **What is novel about 2.0:** EOS Level 10 Meeting methodology is a **first-class product surface**, not a bolt-on. V/TO, Rocks, Scorecard, Issues (IDS), To-Dos, Accountability Chart, live real-time meetings, Quarterly Conversations (QC) — all live. See [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md) for the authoritative product spec.
+
+---
+
+## Who is this KB for
+
+This KB is shared across audiences. Where to go next depends on which seat you sit in (see [team-roles.md](team-roles.md) for the four seats):
+
+- **Engineering team members** (Devs, Project lead + KB owner, Product owner) — read this file end-to-end. Then [conventions.md](conventions.md) for patterns, [team-roles.md](team-roles.md) for tool access, and [reference/](../reference/) as work demands.
+- **Non-technical KB readers** (new hires before commit access, external reviewers / consultants, deep-reading partners) — read the "What is Unicorn 2.0?" section above and "Who's who" further down. Skip the technical sections in between. See "Reading guide for non-technical readers" near the end of this file for what to read in other docs and what this Claude Project will and won't do for you.
 
 ---
 
@@ -147,6 +156,44 @@ The team is organised around four **seats** (responsibilities), not titles. The 
 - Stripe / subscriptions — not wired. `MembershipDashboard` exists but no Stripe. See [module-status.md](../codebase-state/module-status.md).
 - `generate-audit-report` — not found in codebase; confirm with RJ
 - The six named AI agents (Alex, Casey, Morgan, Jordan, Riley, Sam) — not confirmed as named entities (many AI functions exist but agent naming is unclear)
+
+---
+
+## Reading guide for non-technical readers
+
+If you're in the **Non-technical KB reader** seat (new hires before commit access, external reviewers / consultants, deep-reading partners), here's what to read and what to skip across the rest of the KB.
+
+| File | What to read |
+|---|---|
+| `pinned/orientation.md` (this file) | Top through "Who's who" and "What's live"; skip the engineering Onboarding checklist and Standing questions |
+| `pinned/team-roles.md` | "Seats" section and "People → seat mapping" — these tell you who the team is and what each seat does. Skip the tool access matrix and handoff routing unless curious. |
+| `pinned/glossary.md` | Browse as needed — useful when terminology is unfamiliar |
+| `pinned/decisions.md` | The one-line index; ADR titles tell the story |
+| `pinned/conventions.md` | Read the "Scope of these conventions" intro for context. Everything else assumes engineering context — skip. |
+| `pinned/kb-hygiene.md` | Useful for understanding how the KB itself works and is maintained |
+| `reference/decision-trail.md` | ADR-011 (operating model) and ADR-006 (EOS as product surface) are the most context-rich. Skip the rest unless a specific decision number comes up. |
+| `reference/cadence.md`, `reference/flow-patterns.md`, `reference/migration-1to2.md` | Skip — engineering operations and patterns |
+| `reference/brainstorm-log.md` | Optional — raw thinking from the team |
+| `codebase-state/*` | Skip — code-state docs |
+| `handoffs/non-technical-proposal.md` | Read this if you have a proposed change to the KB |
+| Other `handoffs/*.md` | Skip — engineering procedures |
+
+### What this Claude Project will and won't do for you
+
+The Claude Project (this chat interface, accessed through claude.ai) is set up to answer questions about Unicorn from the KB and the codebase.
+
+**You can ask:**
+- "What is X?" / "How does X work?" / "Where is X in the codebase?"
+- "Who owns Y?" / "Why was Z decided?"
+- "Walk me through the [module/flow/decision]"
+
+**It won't:**
+- Commit to repositories on your behalf — writes happen via Claude Code, which non-technical readers don't have access to.
+- Run reconciliations, post-Lovable-remix rituals, or audit-trail entries — KB owner only (Carl).
+- Make engineering decisions for you — Claude can lay out tradeoffs and surface context, but the seat with authority still has to make the call.
+- Generate code that lands in the codebase — Lovable does that for the team.
+
+If you have a proposed change to the KB, see [handoffs/non-technical-proposal.md](../handoffs/non-technical-proposal.md).
 
 ---
 

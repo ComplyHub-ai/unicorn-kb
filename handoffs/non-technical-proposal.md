@@ -1,13 +1,13 @@
 # Handoff: Non-Technical KB Proposal
 
-> **Last updated:** 2026-04-24 · **Reconsider by:** 2026-07-24 · **Confidence:** medium (new flow, iterate).
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-07-27 · **Confidence:** medium (new flow, iterate). 2026-04-27: re-pitched intro to explicitly name the Non-technical KB reader seat from the seat-centric restructure.
 >
 > You have a KB proposal — something that should be recorded, changed, or
 > added — but you don't use git or Claude Code. This handoff exists so
 > your proposal doesn't get lost and you don't have to learn a toolchain
 > to contribute.
 >
-> **Applies to:** anyone on the Unicorn 2.0 team without commit access.
+> **Applies to:** the **Non-technical KB reader** seat (see `pinned/team-roles.md`) — new hires before commit access, external reviewers / consultants Angela brings in, and any other reader without commit access.
 
 ---
 
