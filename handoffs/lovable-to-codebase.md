@@ -83,9 +83,8 @@ Common beyond-codebase-state updates:
 - `reference/flow-patterns.md` — if a new flow or altered existing flow.
 - `pinned/glossary.md` — new vocabulary.
 
-If Claude identifies updates, use
-[claude-code-to-claude-project.md](claude-code-to-claude-project.md) to
-land them.
+If Claude identifies updates, land them as a KB commit before closing
+the session.
 
 ---
 

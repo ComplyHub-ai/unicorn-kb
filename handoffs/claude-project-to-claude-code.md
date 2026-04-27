@@ -81,8 +81,7 @@ See `unicorn-audit/CLAUDE.md` for audit session rituals.
 - **Editing across repos in one commit.** Don't. Keep commits atomic per
   repo. Cross-reference via SHAs in commit messages instead.
 - **Skipping the KB update.** If the chat surfaced a new convention or
-  decision, the KB needs it even if no code changed. Use
-  [claude-code-to-claude-project.md](claude-code-to-claude-project.md) at
-  the end to double-check nothing slipped.
+  decision, the KB needs it even if no code changed. Double-check nothing
+  slipped before closing the session.
 - **Treating Claude Code's scope read as truth.** It works from the summary
   you pasted; if your summary was incomplete, so is its scope. Re-read.
