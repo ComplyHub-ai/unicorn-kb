@@ -1,6 +1,6 @@
 # Start Here — Unicorn 2.0
 
-> **Last updated:** 2026-04-23 · **Reconsider by:** 2026-10-23 · **Confidence:** medium-high — tenant ID verified in codebase; remaining items await RJ validation.
+> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure.
 >
 > Shared orientation for the Unicorn 2.0 engineering team. Product overview, mental model, ground rules, and key landmarks. Read this before diving into any other KB file.
 
@@ -9,6 +9,8 @@
 ## What is Unicorn 2.0?
 
 **One-line:** A multi-tenant React + Supabase platform that runs Vivacity's compliance-consulting business end-to-end — clients, pipeline, weekly EOS meetings, quarterly conversations, RTO compliance audits.
+
+**Scope of this KB.** Vivacity has two products: Unicorn (this codebase) and ComplyHub (separate; not covered here). The GitHub org name `ComplyHub-ai` reflects the company, not a product-specific scope. If you're looking for ComplyHub docs, this isn't the place.
 
 **Who uses it:**
 - **Vivacity staff** (tenant ID `6372`) — consultants working across many client RTOs. Roles: Super Admin, Team Leader, Team Member.
@@ -92,12 +94,21 @@ Full navigational map: [codebase-map.md](../codebase-state/codebase-map.md).
 
 ## Who's who
 
-| Name | Role | Owns |
-|---|---|---|
-| RJ Badua | Tech lead / architect | Schema, RLS policies, backend decisions, ADRs |
-| Senior dev | Code quality, frontend architecture, mentoring | Feature implementation, conventions |
-| Khian | Junior dev | Shipping features under review |
-| Vivacity partners | Business / product | Roadmap, client priorities |
+The team is organised around four **seats** (responsibilities), not titles. The same person may sit in multiple seats. See `pinned/team-roles.md` for full seat definitions, tool access, and handoff routing.
+
+| Person | Seats |
+|---|---|
+| Angela | Product owner + Dev |
+| Carl | Project lead + KB owner + Dev |
+| Dave | Dev |
+| RJ | Dev (works mostly on ComplyHub) |
+| Khian (Brian) | Dev — junior, growing scope |
+
+**Seat summary:**
+- **Product owner** (Angela) — owns Unicorn the product; final say on what ships.
+- **Project lead + KB owner** (Carl) — engineering direction; KB stewardship; sole audit-repo access; Lovable remix trigger.
+- **Dev** — feature implementation, almost entirely through Lovable; no peer review or sign-off gates today.
+- **Non-technical KB reader** (no current named occupants) — read-only seat for new hires before access, external reviewers, deep-reading internals.
 
 ---
 
