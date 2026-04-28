@@ -102,7 +102,7 @@ not a warning.
 
 ---
 
-## Audit trigger (Carl only)
+## Audit trigger (Carl-authored — reconciliation audits)
 
 Open an audit doc in `unicorn-audit/audits/` if:
 - The Lovable feature contradicts something in the pinned KB.

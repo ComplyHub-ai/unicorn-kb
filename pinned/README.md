@@ -44,7 +44,7 @@ When pinned KB and the repo disagree, the repo wins.
 - Conventions, decisions, patterns → PR against `unicorn-kb/` on a branch.
 - Module status / codebase map / as-shipped architecture → `unicorn-kb/codebase-state/`,
   lives in the KB (not in the codebase repo — Lovable shouldn't touch these files).
-- Audit narrative → `unicorn-audit/` (Carl only).
+- Audit narrative → `unicorn-audit/` (Carl-authored for reconciliations and remixes; dev-authored for Lovable prod DB change sessions — see `handoffs/lovable-production-db-change.md`).
 - Non-git stakeholders → paste into the designated Claude Project inbox
   thread; see [handoffs/non-technical-proposal.md](handoffs/non-technical-proposal.md).
 

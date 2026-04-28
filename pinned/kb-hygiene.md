@@ -26,10 +26,14 @@ unicorn-kb/           ← team KB. This repo.
   ├── codebase-state/ ← fetched via GitHub MCP; as-shipped state of <codebase>/
   └── handoffs/       ← scenario-specific procedures
 
-unicorn-audit/        ← Carl's narrative audit trail.
+unicorn-audit/        ← Narrative audit trail.
                         Public repo on GitHub (ComplyHub-ai/unicorn-audit),
                         readable to anyone in the org via GitHub MCP.
-                        Authored only by Carl.
+                        Carl-authored for reconciliations, remixes, and
+                        standing audit narrative. Dev-authored for Lovable
+                        production DB change sessions per
+                        handoffs/lovable-production-db-change.md; Carl
+                        reviews those entries via PR.
   └── audit/          ← one markdown file per audit event
 ```
 
@@ -204,6 +208,7 @@ Enforced via the Claude Project's custom instructions. Rules summarised:
 | Team composition / tool access changes | `pinned/team-roles.md` |
 | Lovable does a remix | Full regeneration of `codebase-state/*` + audit entry |
 | Material feature ship | Partial refresh of affected `codebase-state/*` sections |
+| Lovable production DB change session ships | Audit entry written by the dev who ran the session per `handoffs/lovable-production-db-change.md`; Carl reviews via PR |
 
 ### Review cadence
 
@@ -234,7 +239,7 @@ After the 2026-04-27 seat-centric restructure, the project lead + KB owner seat 
 | `pinned/glossary.md` | Anyone; curated by Carl |
 | `handoffs/*.md` | Carl |
 | `codebase-state/*` | Regenerated post-remix by Carl |
-| `unicorn-audit/*` | Carl only |
+| `unicorn-audit/*` | Carl (reconciliations, remixes, standing narrative); session dev (Lovable prod DB changes); Carl reviews all dev-authored entries |
 
 ### Pruning discipline
 

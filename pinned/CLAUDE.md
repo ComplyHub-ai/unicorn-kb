@@ -18,7 +18,7 @@ Post-remix: update the `<codebase>` row above (org stays `vivacityrto`; repo nam
 ```
 ~/repository/unicorn-workspace/
 ├── CLAUDE.md                              ← this file
-├── unicorn-audit/                         ← audit trail (Carl only)
+├── unicorn-audit/                         ← audit trail (Carl-authored for reconciliations/remixes; dev-authored for Lovable prod DB changes)
 ├── unicorn-kb/                            ← team KB
 └── unicorn-cms-f09c59e5/                  ← codebase (Lovable territory)
 ```
@@ -107,5 +107,5 @@ Open Claude Code at the sub-repo directly (not workspace root). The sub-repo's o
 | `unicorn-kb/pinned/kb-hygiene.md` | KB policy |
 | `unicorn-kb/handoffs/README.md` | Scenario procedures |
 | `unicorn-kb/handoffs/post-lovable-remix.md` | What to do when `<codebase>` directory name changes |
-| `unicorn-audit/README.md` | Audit repo (Carl only) |
+| `unicorn-audit/README.md` | Audit repo — authorship split by session type; see Lovable production DB change sessions section in workspace root CLAUDE.md |
 | `unicorn-audit/CLAUDE.md` | Audit-session rituals (takes precedence for unicorn-audit/ sessions) |

@@ -57,7 +57,7 @@ Full rules in [reference/source-precedence.md](reference/source-precedence.md).
 - Codebase state (module status, codebase map, architecture) → PR against
   `unicorn-kb/codebase-state/`; full regeneration after a Lovable remix,
   surgical edits per feature ship.
-- Audit narrative → `unicorn-audit/` (Carl only).
+- Audit narrative → `unicorn-audit/` (Carl-authored for reconciliations and remixes; dev-authored for Lovable prod DB change sessions — see `handoffs/lovable-production-db-change.md`).
 - Non-git stakeholders → paste into the designated Claude Project inbox
   thread; see [handoffs/non-technical-proposal.md](handoffs/non-technical-proposal.md).
 

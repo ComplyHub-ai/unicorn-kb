@@ -18,6 +18,7 @@
 The legacy ADR-001 through ADR-010 records live in reference/decision-trail.md but were not migrated forward as one-liners — they'll be re-engaged here as they become relevant in real work. New decisions from this point forward are recorded as normal (one-line index entry here + full ADR in decision-trail.md).
 
 - [ADR-011] [2026-04-27] Operating model — Lovable is the workflow; no peer review or sign-off gates — full: [reference/decision-trail.md#adr-011](../reference/decision-trail.md#adr-011)
+- [ADR-012] [2026-04-28] Audit-entry authorship — devs author Lovable prod DB change sessions; Carl sole author for everything else — full: [reference/decision-trail.md#adr-012](../reference/decision-trail.md#adr-012)
 
 ---
 
