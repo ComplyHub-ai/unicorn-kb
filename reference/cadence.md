@@ -80,7 +80,7 @@ When picking up a ticket:
 4. **Does it touch RLS?** Apply the three-step ritual (`pinned/conventions.md → New table checklist`). Lovable-generated migrations may or may not include all three steps; check post-merge.
 5. **Does it add a page?** Follow the Wrapper convention. Add the route to `App.tsx` **above** the catch-all.
 6. **Does it add a third-party dependency?** Check existing deps first; if genuinely needed, record the decision.
-7. **Is there a test plan?** Even a manual one. UI work in Lovable is easy to regress.
+7. **Is there a test plan?** Even a manual one. UI work in Lovable is easy to regress. For any data-fetch or optimisation change: run the blast-radius check first, scope the Lovable prompt explicitly, and run the post-pull checklist before marking done. See [reference/dev-guardrails.md](dev-guardrails.md).
 
 When closing a ticket:
 

@@ -292,3 +292,7 @@ Before merging a migration that creates a table:
 - Don't cache the Supabase client per-component — use the singleton from `src/integrations/supabase/client.ts`.
 - Don't put tenant-ID checks on the frontend as the only line of defense. RLS first; frontend filters for UX.
 - Don't mix `react-query` with ad-hoc `useEffect` fetches for the same data. Pick one per surface.
+- Don't derive summary counts (totals, status breakdowns, load distributions) from a paginated array's `.length`. Use a dedicated count query — paginating the list silently breaks any stat card that reads from it.
+- Don't return `null` as the error branch for a failed fetch. Always render a heading, description, and retry action so the user is not stranded on a blank screen.
+
+For the full regression-prevention checklist, see [reference/dev-guardrails.md](../reference/dev-guardrails.md).
