@@ -16,6 +16,7 @@
 | Are pulling in a feature Lovable shipped to `<codebase>/` | [lovable-to-codebase.md](lovable-to-codebase.md) |
 | Are reconciling after a Lovable remix (Carl only) | [post-lovable-remix.md](post-lovable-remix.md) |
 | Are a non-technical stakeholder with a KB proposal | [non-technical-proposal.md](non-technical-proposal.md) |
+| Are implementing a production database change via Lovable (migrations, FKs, triggers, RLS, data fixes) | [lovable-production-db-change.md](lovable-production-db-change.md) |
 
 ---
 
