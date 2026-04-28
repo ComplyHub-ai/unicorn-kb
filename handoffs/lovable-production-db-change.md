@@ -130,7 +130,7 @@ Use pg_cron for scheduling. Always set the job to self-unschedule after one run.
 
 1. Run verification queries the morning after off-peak steps
 2. Confirm affected users can log in / feature works end-to-end
-3. Document the session in `unicorn-audit/` following the audit template
+3. Write the audit entry — the dev who ran the session authors it; Carl reviews via PR. Follow the template in `unicorn-audit/README.md`; push to a branch named `audit/YYYY-MM-DD-<slug>`; do not auto-merge.
 4. Update `unicorn-audit/INDEX.md`
 5. Update any stale KB docs in `unicorn-kb/codebase-state/` if the migration changed documented architecture
 

@@ -1,6 +1,6 @@
 # Team Roles & Tool Access
 
-> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-07-27 · **Confidence:** high — reflects the seat-centric model agreed in the 2026-04-27 restructure session; audit-repo read access added 2026-04-28.
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-07-28 · **Confidence:** high — reflects the seat-centric model agreed in the 2026-04-27 restructure session; audit-repo read access added 2026-04-28; audit-entry authorship split per ADR-012 added 2026-04-28.
 >
 > Vivacity has two products: Unicorn and ComplyHub. This KB covers Unicorn. Roles below describe **seats** (responsibilities), not people — the same person may sit in multiple seats. See "People → seat mapping" for who sits where today.
 
@@ -24,11 +24,11 @@ The team is organised as four seats — three contributor, one consumer. Seats d
 
 **Purpose**: Leads the Unicorn engineering effort day-to-day and stewards the knowledge base. Translates product direction into shipped code; keeps the KB honest as the codebase and team evolve.
 
-**Owns**: KB structure and hygiene; `unicorn-audit/` repo (sole author — read access is universal across the org per the 2026-04-28 reconciliation); Lovable remix trigger; post-remix ritual; KB pinned-file changes; `conventions.md` and `flow-patterns.md`; ADR merging (anyone proposes; project lead merges); Open Decision resolution; curation of `glossary.md` and `brainstorm-log.md`; reconciliation cadence.
+**Owns**: KB structure and hygiene; `unicorn-audit/` repo (Carl-authored for reconciliations, remixes, and all standing audit narrative; dev-authored for Lovable production DB change sessions per `handoffs/lovable-production-db-change.md`; read access is universal across the org); Lovable remix trigger; post-remix ritual; KB pinned-file changes; `conventions.md` and `flow-patterns.md`; ADR merging (anyone proposes; project lead merges); Open Decision resolution; curation of `glossary.md` and `brainstorm-log.md`; reconciliation cadence.
 
 **Contributes to**: feature implementation as a Dev (the project lead also wears the Dev seat).
 
-**Authority**: KB pinned-file merges (final say); Lovable remix timing (final say, but product owner can override); audit events (sole authority). Not schema or RLS sign-off — those don't exist as gates today.
+**Authority**: KB pinned-file merges (final say); Lovable remix timing (final say, but product owner can override); audit events — sole authority for reconciliations, remixes, and standing narrative; reviewer for dev-authored Lovable prod DB change entries (see `handoffs/lovable-production-db-change.md`). Not schema or RLS sign-off — those don't exist as gates today.
 
 ### 3. Dev
 
@@ -80,15 +80,16 @@ Per occupant. Marked at the person level because tool access varies by individua
 | `<codebase>/` commit (via Lovable) | ✅ | ✅ | ✅ | ❌ (doesn't use) | ✅ | ❌ |
 | `unicorn-kb/` commit (via Claude Code) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `unicorn-audit/` read | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `unicorn-audit/` write | ❌ | ✅ (sole) | ❌ | ❌ | ❌ | ❌ |
+| `unicorn-audit/` write | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Supabase console | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
 **GitHub MCP write path.** The GitHub MCP connector in claude.ai chat is configured with a **read-only PAT by design** — chat users cannot open PRs through it, even for `unicorn-kb/`. Writes happen exclusively from Claude Code sessions, which use local `gh`/git credentials. This is intentional — it keeps the chat connector's blast radius small. Verified 2026-04-27.
 
+**`unicorn-audit/` write access.** Devs (Angela, Carl, Dave, RJ, Khian) may write audit entries for Lovable production DB change sessions — the dev running the session authors the entry; Carl reviews via PR. All other audit entries (reconciliations, remixes, standing narrative) are Carl-authored only. See `handoffs/lovable-production-db-change.md` for the session workflow and ADR-012 for the authorship rationale.
+
 **`unicorn-audit/` read access.** The repo is public on GitHub
 (`ComplyHub-ai/unicorn-audit`); anyone with GitHub MCP configured can
-fetch its contents. Authorship is Carl-only — no PRs accepted from
-others. Audit is not part of source precedence (see
+fetch its contents. Audit is not part of source precedence (see
 `pinned/kb-hygiene.md`); it's available for "why did we end up here"
 historical context, not for resolving current-state questions.
 
@@ -104,6 +105,7 @@ historical context, not for resolving current-state questions.
 | [lovable-to-codebase.md](../handoffs/lovable-to-codebase.md) | generates events | ✅ reconciler | generates events | ❌ | generates events | ❌ |
 | [post-lovable-remix.md](../handoffs/post-lovable-remix.md) | ❌ | ✅ ritual owner | ❌ | ❌ | ❌ | ❌ |
 | [non-technical-proposal.md](../handoffs/non-technical-proposal.md) | ❌ | recipient | ❌ | ❌ | ❌ | ✅ author |
+| [lovable-production-db-change.md](../handoffs/lovable-production-db-change.md) | ✅ user | ✅ user + reviewer | ✅ user | ✅ user | ✅ user | ❌ |
 
 **`lovable-to-codebase.md` semantics.** Lovable users don't "author" a handoff doc — they generate the events (direct-to-`main` Lovable commits) that the project lead reconciles. The handoff is purely KB-owner-side: Carl watches `main`, reconciles `codebase-state/*` and any affected `pinned/*` files when drift accumulates.
 
@@ -114,7 +116,7 @@ historical context, not for resolving current-state questions.
 - **KB pinned-file changes**: project lead (Carl) reviews and merges. No external reviewer required.
 - **Open Decision resolution**: anyone proposes; project lead merges the ADR.
 - **Lovable remix trigger**: project lead's call, communicated before remix so the team can pause Lovable work.
-- **Audit events**: project lead only. Not a team-visible process.
+- **Audit events**: project lead (Carl) only for reconciliations, remixes, and standing audit narrative. Lovable production DB change sessions are dev-authored — the dev running the session writes the entry; Carl reviews via PR (see `handoffs/lovable-production-db-change.md` and ADR-012).
 - **Schema and RLS sign-off**: **does not exist as a gate today.** Lovable pushes schema changes direct to `main`. This is a known risk; an ADR documenting the operating-model rationale and the trace path for failures lands in `reference/decision-trail.md` as part of PR2.
 
 ---

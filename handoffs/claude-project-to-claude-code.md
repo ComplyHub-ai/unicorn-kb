@@ -59,9 +59,11 @@ Read the scope. Correct it if Claude Code misread anything.
 
 ---
 
-## Record in the audit repo (conditional, Carl only)
+## Record in the audit repo (conditional)
 
-Open an audit doc if the change:
+**Lovable production DB change sessions** have a mandatory audit entry — authored by the dev who ran the session. See `unicorn-kb/handoffs/lovable-production-db-change.md → After deploy`.
+
+For all other session types (Carl-authored), open an audit doc if the change:
 - Resolves an Open Decision.
 - Introduces or supersedes a convention.
 - Reconciles a divergence between KB and codebase.

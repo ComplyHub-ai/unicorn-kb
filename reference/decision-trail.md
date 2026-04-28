@@ -252,6 +252,40 @@ In practice, as of April 2026: Angela and Dave develop predominantly through Lov
 
 ---
 
+### ADR-012: Audit-entry authorship — split by session type {#adr-012}
+**Date:** 2026-04-28
+**Status:** Decided — amends but does not supersede ADR-011
+**Decided by:** Carl Simpao (project lead + KB owner), per authority granted in ADR-011. Angela not consulted.
+
+**Context:** ADR-011 established the current operating model. A new handoff, `handoffs/lovable-production-db-change.md`, was added on the same date to document the workflow for production DB changes via Lovable. That handoff requires an audit entry at session end. Routing every audit entry through Carl creates lag between execution and record — the dev running the session has the context; Carl does not. At the same time, Carl's reconciliation narrative (post-remix audit entries, tenant reconciliations, operating-model ADRs) is interpretive work that only the KB owner should author.
+
+**Decision:** Audit-entry authorship is split by session type:
+- **Lovable production DB change sessions:** the dev running the session writes the audit entry. Carl reviews (PR review; does not auto-merge). Governed by `handoffs/lovable-production-db-change.md`.
+- **All other audit entries** (reconciliations, post-remix events, standing audit narrative, ADR-driven audits): Carl sole author. No change from ADR-011.
+
+**Reasoning:** Production DB changes via Lovable need a paper trail at the point of execution. The dev has the live context — constraint names, row counts, dry-run output, timing. Having Carl write it up later introduces lag and loses precision. Reconciliation narrative is different in kind: it is interpretation and synthesis, not a session log, so Carl-only authorship there is load-bearing.
+
+**Alternatives considered:**
+- **Keep Carl sole author; devs submit notes for Carl to write up.** Rejected — lag plus context loss. The narrative degrades from a session log to a summary of a summary.
+- **Open audit authorship to all session types.** Rejected — signal-to-noise problem. The audit trail's value comes from discipline about what goes in it. Opening it broadly risks dilution with routine work that belongs in git history, not in a point-in-time audit record.
+
+**Risks accepted:**
+- Dev-authored entries may lack the consistency of Carl-authored entries. Mitigated by the audit template in `unicorn-audit/README.md` and Carl's PR review gate.
+- The PR review gate adds one step to the session close. Acceptable given the stakes of a production DB change.
+
+**Consequences:**
+- `unicorn-audit/` write access expands to all devs (Angela, Carl, Dave, RJ, Khian) for Lovable production DB change sessions.
+- `pinned/team-roles.md`, `pinned/kb-hygiene.md`, `handoffs/lovable-production-db-change.md`, `unicorn-audit/README.md`, `unicorn-audit/CLAUDE.md`, and `~/repository/unicorn-workspace/CLAUDE.md` updated to reflect the split.
+- The audit repo remains public and readable to anyone in the org — no change there.
+
+**Linked to:**
+- ADR-011 (operating model; this ADR amends the audit-authorship aspect only)
+- `handoffs/lovable-production-db-change.md` (the workflow that triggers dev-authored entries)
+- `pinned/team-roles.md → Tool access matrix` and `→ Authority`
+- `pinned/kb-hygiene.md → Three-repo architecture` and `→ Who owns what`
+
+---
+
 ## Decisions still needing ADRs
 
 | Decision | Why write it up | Priority |

@@ -1,6 +1,6 @@
 # Start Here — Unicorn 2.0
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure; ground rules updated 2026-04-27 to reflect operating-model ADR-011; non-technical reader sections added 2026-04-27.
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure; ground rules updated 2026-04-27 to reflect operating-model ADR-011; non-technical reader sections added 2026-04-27; audit authorship updated 2026-04-28 per ADR-012.
 >
 > Shared orientation for the Unicorn 2.0 engineering team. Product overview, mental model, ground rules, and key landmarks. Read this before diving into any other KB file.
 
@@ -115,7 +115,7 @@ The team is organised around four **seats** (responsibilities), not titles. The 
 
 **Seat summary:**
 - **Product owner** (Angela) — owns Unicorn the product; final say on what ships.
-- **Project lead + KB owner** (Carl) — engineering direction; KB stewardship; sole audit-repo access; Lovable remix trigger.
+- **Project lead + KB owner** (Carl) — engineering direction; KB stewardship; sole author for reconciliations and remixes (devs author Lovable prod DB change sessions; see `team-roles.md`); Lovable remix trigger.
 - **Dev** — feature implementation, almost entirely through Lovable; no peer review or sign-off gates today.
 - **Non-technical KB reader** (no current named occupants) — read-only seat for new hires before access, external reviewers, deep-reading internals.
 
