@@ -62,6 +62,26 @@ Feature branch naming:
 **`<codebase>/` is Lovable's territory.** If asked to edit codebase files, refuse and offer either
 (a) a Lovable prompt the user can run, or (b) a hotfix flag requiring explicit override.
 
+## Before writing a Lovable prompt (mandatory for data-fetch changes)
+
+Any prompt that touches a Supabase fetch, React Query hook, useState, or pagination MUST follow these steps. Skip none of them.
+
+**1. Blast-radius check — run this first, before drafting the prompt**
+Ask: what else in the file or codebase reads from or depends on the data this change touches? Identify every consumer (stat cards, filters, load bars, row counts, realtime handlers). If consumers exist, the prompt must account for all of them.
+
+**2. Scope the prompt — include both of these**
+- An explicit "do not touch" list naming every UI element that must produce the same result after the change.
+- A dependency note for any consumer the blast-radius check found, so Lovable knows the relationship exists.
+
+**3. Post-pull verification — check in the browser before marking done**
+- Summary/stat cards show correct DB totals (not capped at page size)
+- Table row counts match the stat cards
+- Filters, realtime updates, and mutations still work correctly
+
+Full checklist and regression trap reference: `unicorn-kb/reference/dev-guardrails.md`
+
+**Why this is here:** ManageTenants pagination fix (April 2026) silently broke the four stat cards because they derived counts from `tenants.length`. Adding `.range(0, 99)` capped the array at 100 rows; cards showed 100 regardless of real DB total. Caught by a stakeholder, not the team.
+
 Across ALL repos:
 - Never push to `main`
 - Never force-push
