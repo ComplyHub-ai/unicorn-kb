@@ -1,6 +1,6 @@
 # Glossary
 
-> **Last updated:** 2026-04-23 · **Reconsider by:** 2027-04-23 · **Confidence:** high — vocabulary is stable; add terms when new ones appear in code or conversation.
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2027-04-23 · **Confidence:** high — vocabulary is stable; add terms when new ones appear in code or conversation.
 >
 > Vocabulary reference for Unicorn 2.0: EOS, compliance/RTO, and product-internal terms.
 > If you don't know a term, it's probably here. If it's not, add it.
@@ -60,6 +60,8 @@ Australian vocational education compliance context. Vivacity's client base is RT
 | **Tenant 6372** | The magic ID. Hardcoded as the Vivacity staff tenant (`VIVACITY_TENANT_ID = 6372` in `invite-user/index.ts` and exported from `useVivacityTeamUsers.tsx`). |
 | **Vivacity staff** | Users belonging to tenant 6372. Roles: Super Admin, Team Leader, Team Member. Can access all tenants via `is_vivacity()` in RLS (or `is_vivacity_internal` column check in edge functions). |
 | **Client / Client RTO** | A tenant other than 6372. Roles: Admin, User. Access scoped to own tenant by default. |
+| **`tenant_members`** | Platform RBAC membership table. Roles: `Admin` / `General User`. Has `status` (active/inactive/pending), `invited_at`, `joined_at`. Used for auth checks, billing signals, seat limits, and AI feature gates. Created as part of the RBAC Model migration; backfilled from `users.tenant_id`. Referenced in RLS SELECT policies. |
+| **`tenant_users`** | Client-side contact/membership table. Roles: `parent` (can manage) / `child` (read-only). Has `primary_contact` and `secondary_contact` booleans (auto-set by trigger when `role = 'parent'`). Used for client management UI, email delivery, document generation, invite-user flow, and M365 provisioning. Not the same as `tenant_members` — both tables exist and serve distinct purposes. |
 | **Unicorn 1.0** | The legacy operating stack being replaced: old Vivacity CMS + Keap + OnceHub + spreadsheets. Not a single codebase. |
 | **Unicorn 2.0** | This codebase. The rebuild — React + Supabase, EOS-first. |
 | **Sibling project** | A separate Vivacity Supabase project that also carries the "Unicorn 2.0" name but has different edge functions, module scope, and RLS helper names. Historical context only — not this codebase. |

@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-07-27 · **Confidence:** medium-high — tenant ID, EOS table names, pg_cron, and LLM provider verified in codebase (April 2026 audit).
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-07-27 · **Confidence:** medium-high — tenant ID, EOS table names, pg_cron, and LLM provider verified in codebase (April 2026 audit). Two-table membership model documented 2026-04-28; tenant ID corrected from 319 → 6372; stale cross-references updated.
 >
 > **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25). Edge function count unchanged at 117 over the past week (a `create-client-audit` function landed on `65c426aa` and was reverted same-day on `084a5e17`). Three new RPC migrations added — see Helper functions section.
 >
@@ -16,7 +16,7 @@ Lovable (React + Vite + TS + shadcn + Tailwind — admin/consultant + client UI)
     │
     ├──► Supabase project: yxkgdalkbrriasiyyrwk
     │        ├── PostgreSQL (multi-tenant, RLS)
-    │        │     ├── tenants, tenant_members, user_invitations, tenant_settings
+    │        │     ├── tenants, tenant_members, tenant_users, user_invitations, tenant_settings
     │        │     ├── users (profile)
     │        │     ├── packages, package_stages, package_stage_instances
     │        │     ├── EOS schema (eos_vto, eos_rocks, eos_issues, eos_todos,
@@ -188,6 +188,15 @@ All in [supabase/functions/](../supabase/functions/). Pattern: service-role Supa
 
 Every tenant-scoped row carries `tenant_id: int`. Tenant `6372` is Vivacity (staff consultancy); every other tenant is a client RTO.
 
+**Two membership tables — both active:**
+
+| Table | Purpose | Role values | Key columns |
+|---|---|---|---|
+| `tenant_members` | Platform RBAC — who has active access to the Unicorn platform for a given tenant | `Admin` / `General User` | `status` (active/inactive/pending), `invited_at`, `joined_at` |
+| `tenant_users` | Client-side contacts — users associated with a client RTO tenant, and their contact role | `parent` (can manage) / `child` (read-only) | `primary_contact` bool, `secondary_contact` bool (auto-set by trigger) |
+
+`tenant_members` is the table used by RLS policies and auth checks (see ritual below). `tenant_users` is the operational table for invite-user, email delivery, document generation, and M365 provisioning. `useClientActingUser.ts` queries `tenant_users` first (primary contact), then falls back to `tenant_members` (Admin role) — confirming the two tables are complementary, not redundant.
+
 **Role split:**
 - Vivacity tenant → roles `Super Admin`, `Team Leader`, `Team Member`
 - Client tenants → roles `Admin`, `User`
@@ -205,9 +214,9 @@ Every tenant-scoped row carries `tenant_id: int`. Tenant `6372` is Vivacity (sta
 - `fn_academy_rule_dashboard_stats()` → package-rule dashboard counts (active rules / total mappings / auto-enrolments / unmapped packages).
 - Migrations: `20260421082533_da37ce62-…sql`, `20260421085406_b2a157f8-…sql`. Surfaced in [src/pages/superadmin/AcademyEnrolmentsPage.tsx](../src/pages/superadmin/AcademyEnrolmentsPage.tsx) via [src/hooks/academy/useAcademyEnrollments.ts](../src/hooks/academy/useAcademyEnrollments.ts).
 
-**Edge function auth note:** Edge functions do NOT call `is_vivacity()` directly. They check the `is_vivacity_internal` boolean column on the `users` table (e.g. `.select('is_vivacity_internal')`), or use the `is_vivacity_staff` RPC (`supabase.rpc('is_vivacity_staff', {p_user: userId})`). The `has_tenant_access_safe` RPC handles tenant membership checks in shared addin auth (`_shared/addin-auth.ts`). The canonical pattern in `02-system-design.md` covers the simplified form; real functions vary.
+**Edge function auth note:** Edge functions do NOT call `is_vivacity()` directly. They check the `is_vivacity_internal` boolean column on the `users` table (e.g. `.select('is_vivacity_internal')`), or use the `is_vivacity_staff` RPC (`supabase.rpc('is_vivacity_staff', {p_user: userId})`). The `has_tenant_access_safe` RPC handles tenant membership checks in shared addin auth (`_shared/addin-auth.ts`). The canonical pattern in [conventions.md](../pinned/conventions.md) covers the simplified form; real functions vary.
 
-**RLS conventions (see [02-system-design.md](02-system-design.md#rls) for full rationale and checklist):**
+**RLS conventions (see [conventions.md](../pinned/conventions.md#rls) for full rationale and checklist):**
 1. Every new table with mixed staff + client access needs **two policies**:
    - Tenant-read SELECT via tenant membership check (client RTO users)
    - Staff ALL via `is_vivacity()` (Vivacity consultants)
@@ -253,7 +262,7 @@ Diagnostics reference: [docs/INVITE_USER_DIAGNOSTICS.md](../docs/INVITE_USER_DIA
 - **Real-time** — Supabase channels, typically inside a domain hook (see [useMeetingRealtime](../src/hooks/useMeetingRealtime.ts) for the live-meeting example).
 - **Forms** — `react-hook-form` + `zod` schemas. Validation at the form layer, RLS at the DB layer.
 
-Full patterns in [02-system-design.md](02-system-design.md).
+Full patterns in [conventions.md](../pinned/conventions.md).
 
 ---
 
@@ -288,14 +297,14 @@ Historical Vivacity docs list five audit-specific storage buckets by name — th
 3. **Lovable → UI layer only.** No schema decisions, no business logic. If Lovable scaffolds a table, remove it before migration.
 4. **Service-role edge functions validate the caller manually.** Always `supabase.auth.getUser(callerToken)` then check `unicorn_role` + `tenant_id`.
 5. **NOT NULL columns with frontend writes → add a coercion trigger.** Column defaults do not protect against explicit `NULL` values sent by Lovable-generated forms.
-6. **Tenant 319 is Vivacity** — hardcoded constant in `invite-user` and checked throughout. If this changes, grep `319` across the repo.
+6. **Tenant 6372 is Vivacity** — hardcoded constant (`VIVACITY_TENANT_ID = 6372`) in `invite-user/index.ts` and exported from `useVivacityTeamUsers.tsx`. If this changes, grep `6372` across the repo.
 7. **Multi-tenant defaults.** Every domain query should filter by `tenant_id`. Cross-tenant access is Vivacity-staff-only and goes through `is_vivacity()`.
 
 ---
 
 ## Open architectural questions
 
-Track these in [05-product-decisions.md → Open Decisions](05-product-decisions.md#open-decisions). Highlights:
+Track these in [decisions.md → Open Decisions](../pinned/decisions.md#open-decisions). Highlights:
 
 - **Stripe webhooks** — Edge Function or n8n? Subscriptions still not wired.
 - **LLM providers (resolved):** Primary gateway: `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`, serving `google/gemini-2.5-flash` and `google/gemini-3-flash-preview` models via Lovable's AI proxy. Secondary: Direct OpenAI `gpt-4o-mini` in `assistant-answer` with `OPENAI_API_KEY`. Prompt ownership and orchestration routing are still undocumented — flag to RJ.

@@ -1,6 +1,6 @@
 # System Design — Conventions & Patterns
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — canonical patterns derived from invite-user + useAuth; tenant ID corrected to 6372 in April 2026 audit. Edge function auth pattern note added. Template/instance pattern (added 2026-04-23) is descriptive of 1.0 with one confirmed 2.0 use; further extension is open. **2026-04-27:** scope clarified — these conventions are aspirational targets for hand-written code, not enforced via pre-merge review. See `reference/decision-trail.md → ADR-011`.
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — canonical patterns derived from invite-user + useAuth; tenant ID corrected to 6372 in April 2026 audit. Edge function auth pattern note added. Template/instance pattern (added 2026-04-23) is descriptive of 1.0 with one confirmed 2.0 use; further extension is open. **2026-04-27:** scope clarified — these conventions are aspirational targets for hand-written code, not enforced via pre-merge review. See `reference/decision-trail.md → ADR-011`.
 >
 > The "how we do things here" doc. Rules to follow when adding code, with rationale so you can handle edge cases.
 
@@ -24,7 +24,10 @@ Every tenant-scoped row has:
 User identity:
 - `auth.users` — Supabase-managed, UUID primary key
 - `users` — app profile, keyed by `user_uuid` matching `auth.users.id`. Holds `unicorn_role`, `tenant_id`, name, avatar.
-- `tenant_members` — many-to-many for users who access multiple tenants (edge case; most users belong to one tenant).
+- `tenant_members` — platform RBAC table. Roles: `Admin` / `General User`. Has `status` (active/inactive/pending), `invited_at`, `joined_at`. Used for auth checks (`useAuth`), billing signals, seat limits, and AI feature gates. Used in RLS policies for client-user SELECT checks (see ritual below).
+- `tenant_users` — client-side contact/membership table. Roles: `parent` (can manage) / `child` (read-only). Has `primary_contact` and `secondary_contact` booleans (auto-set by trigger when `role = 'parent'`). Used for client management UI, email delivery, document generation, invite-user provisioning, and M365 provisioning.
+
+> **Two-table note:** both tables store user–tenant relationships but serve different purposes. The RLS SELECT policy template below references `tenant_members` — that governs platform access. `tenant_users` governs client-org contact roles and is written by the invite-user edge function. Do not conflate them.
 
 ### Role matrix
 

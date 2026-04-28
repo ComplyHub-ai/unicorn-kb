@@ -1,6 +1,6 @@
 # Module Status
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-05-27 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
+> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-05-27 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
 >
 > **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25)
 >
@@ -378,4 +378,4 @@
 | Academy | ✅ | Fully shipped — ~30 pages, 22 components, 9 hooks, role-specific client views, superadmin builder |
 | Resource Hub | ✅ | Shipped — 12 staff + client routes, categorised library |
 
-See [07-migration-map.md](07-migration-map.md) for what came from Unicorn 1.0 and what's net-new.
+See [migration-1to2.md](../reference/migration-1to2.md) for what came from Unicorn 1.0 and what's net-new.
