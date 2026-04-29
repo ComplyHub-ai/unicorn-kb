@@ -1,7 +1,8 @@
 # Ask Viv Fix — Lovable Prompt Procedure
 
 > **Created:** 28 April 2026  
-> **Status:** Active — use this when the Ask Viv feature shows "Something went wrong" or compliance mode is broken.  
+> **Completed:** 29 April 2026 — all prompts executed and verified  
+> **Status:** Reference — keep for the next time Ask Viv breaks  
 > **Trigger:** Ask Viv panel crashes or compliance-mode messages fail to render.
 
 ---
@@ -29,6 +30,23 @@ V4 does return these **new** fields (not yet used by the frontend):
 The render guards in `AskVivPanel.tsx` (e.g. `message.scope_lock &&`) should prevent crashes from undefined values, but a render exception somewhere in the chain triggers the `ErrorBoundary` and crashes the whole dashboard.
 
 **This fix involves no database migrations.** The Lovable production DB change procedure does not apply.
+
+---
+
+## What actually happened — 29 April 2026 session
+
+Three bugs were discovered via DevTools before the numbered prompts ran. All were fixed via Lovable before Prompt 1.
+
+**Bug A — `AskVivCapabilitiesBanner` page-load crash**  
+`useAskViv` Zustand store persists `selectedMode` to localStorage. A prior session had saved `selectedMode: 'web'`. On reload, `modeConfig['web']` was `undefined` (the `web` key was missing from the object), causing `config.icon` to throw `TypeError: Cannot read properties of undefined`. Fix: added `web` entry to `modeConfig` with the `Globe` icon.
+
+**Bug B — `ReferenceError: GLOBAL_SYSTEM_PROMPT is not defined` in edge function**  
+`_shared/ask-viv-prompts/index.ts` used re-export syntax (`export { X } from './x.ts'`) for all prompt constants. Re-exports do not create local bindings in Deno; `buildPromptPack()` then used those names as local variables and threw at runtime. Fix: converted all three re-export blocks to import-then-export. Confirmed by `ai_interaction_logs` having zero compliance entries — the function had never completed since V4 deployed.
+
+**Bug C — "Tenant Required" toast for Super Admin in compliance mode**  
+`loadTenantContext()` in `AskVivPanel.tsx` queries `tenant_members` to resolve tenant context. Super Admins have no `tenant_members` rows, so the query returned nothing and the panel showed a "Tenant Required" error. Fix: added URL-based fallback — if `tenant_members` returns no rows, parse `/tenant/:id` from `location.pathname` and query the `tenants` table directly.
+
+After Bugs A–C were resolved, Prompts 1–5 were executed in sequence and all verified in the live app on 29 April 2026.
 
 ---
 
