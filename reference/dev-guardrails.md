@@ -1,6 +1,6 @@
 # Dev Guardrails — Regression Prevention
 
-> **Last updated:** 2026-04-29 · **Reconsider by:** 2026-07-29 · **Confidence:** high — written after the ManageTenants pagination regression (2026-04-28) and the AcceptInvitation blank-screen fix. Grounded in two real incidents, not theory.
+> **Last updated:** 2026-04-29 · **Reconsider by:** 2026-07-29 · **Confidence:** high — grounded in real incidents: ManageTenants pagination regression (2026-04-28), AcceptInvitation blank-screen fix (2026-04-28), `client_audits` constraint gap and label map drift (2026-04-29).
 >
 > Practical process for preventing regressions when shipping via Lovable or Claude Code. Applies to optimisations, refactors, and data-fetch changes in particular — the category most likely to silently break other UI features.
 
@@ -127,6 +127,51 @@ These are patterns that have caused or will cause silent regressions. Treat each
 **Risk:** The user sees a completely blank page. No heading, no explanation, no retry. Toast notifications auto-dismiss — after a few seconds there is nothing on screen and no way to proceed.
 
 **Rule:** Every `if (!data)` branch that can be reached after a failed fetch must render an explicit error state: a heading, a description, and a retry action. `return null` is only acceptable for loading skeletons where a spinner is already rendered in a parent.
+
+---
+
+### Trap 6 — Adding an `AuditType` value without updating all label maps
+
+**Pattern:** A new value is added to the `AuditType` union in `src/types/clientAudits.ts` — or an existing label is renamed — without updating the edge function's local copy of the map.
+
+**Risk:** The edge function cannot import from `src/` (Deno runtime), so it maintains its own `AUDIT_TYPE_LABELS` in `supabase/functions/research-audit-intelligence/index.ts`. When that copy falls behind, intelligence pack report headers and the Perplexity AI prompt receive the raw enum string (`due_diligence_combined`) instead of a human label (`Combined RTO + CRICOS Due Diligence`). Lovable has no reference to compare against and may also choose a shorter form — e.g. `"CHC"` instead of the canonical `"CHC — RTO"` — creating a label inconsistency across the platform.
+
+**Origin:** April 2026 — edge function `AUDIT_TYPE_LABELS` carried only 5 legacy ASQA types when the `AuditType` union had 7 values. On fix, Lovable chose `compliance_health_check: "CHC"` which mismatched the canonical `"CHC — RTO"` in `src/types/clientAudits.ts`. Caught by cross-map audit immediately after the pull. See `unicorn-audit/audit/2026-04-29-client-audits-audit-type-constraint.md → Finding 4`.
+
+**There are currently three `AUDIT_TYPE_LABELS` maps in the codebase:**
+
+| File | Coverage | Import source |
+|------|----------|---------------|
+| `src/types/clientAudits.ts` | 7 `AuditType` values | **Canonical — all others must match this** |
+| `supabase/functions/research-audit-intelligence/index.ts` | 5 legacy ASQA + 7 `AuditType` | Manual copy — cannot import from `src/` |
+| `src/components/tenant/AuditIntelligencePackPanel.tsx` | 5 legacy ASQA only | Local copy — should import from canonical |
+
+**Rule:**
+1. `src/types/clientAudits.ts` is the single source of truth for `AuditType` labels.
+2. Whenever `AuditType` gains a new value **or** an existing label is renamed in `src/types/clientAudits.ts`, the edge function map must be updated in the same Lovable prompt with the identical string.
+3. Before approving any Lovable prompt that touches either map, cross-check every key and value against the canonical source.
+4. `AuditIntelligencePackPanel.tsx` should be migrated to import from `src/types/clientAudits.ts` to eliminate its local copy (pending Angela's confirmation on scope — see open question in the audit doc).
+
+---
+
+### Trap 7 — Adding an `AuditType` value without updating the DB CHECK constraint
+
+**Pattern:** A new value is added to the `AuditType` union in `src/types/clientAudits.ts` without a corresponding migration widening `client_audits_audit_type_check`.
+
+**Risk:** The frontend will accept the new audit type through the wizard UI with no error. The insert call in `useCreateAudit` passes `selectedCard.value` directly to the DB. The DB will reject it with a PostgreSQL constraint violation, which surfaces only as a generic `Failed to create audit` toast — no visible indication of the root cause.
+
+**Origin:** April 2026 — `due_diligence_combined` was in the `AuditType` union and all UI components handled it correctly, but the DB constraint was never widened. Any attempt to create a Combined RTO + CRICOS Due Diligence audit failed silently. See `unicorn-audit/audit/2026-04-29-client-audits-audit-type-constraint.md → Finding 2`.
+
+**Rule:** Every addition to `AuditType` in `src/types/clientAudits.ts` must be paired with a migration that adds the new value to `client_audits_audit_type_check`. Verify the constraint first:
+
+```sql
+SELECT conname, pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'public.client_audits'::regclass AND contype = 'c';
+```
+
+The current allowed values (post April 2026 fix) are:
+`compliance_health_check`, `cricos_chc`, `rto_cricos_chc`, `mock_audit`, `cricos_mock_audit`, `due_diligence`, `due_diligence_combined`.
 
 ---
 
