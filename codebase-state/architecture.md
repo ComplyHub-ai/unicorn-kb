@@ -1,8 +1,8 @@
 # Architecture
 
-> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-07-27 · **Confidence:** medium-high — tenant ID, EOS table names, pg_cron, and LLM provider verified in codebase (April 2026 audit). Two-table membership model documented 2026-04-28; tenant ID corrected from 319 → 6372; stale cross-references updated.
+> **Last updated:** 2026-04-30 · **Reconsider by:** 2026-07-30 · **Confidence:** medium-high — tenant ID, EOS table names, pg_cron, and LLM provider verified in codebase (April 2026 audit). Two-table membership model documented 2026-04-28; tenant ID corrected from 319 → 6372; stale cross-references updated.
 >
-> **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25). Edge function count unchanged at 117 over the past week (a `create-client-audit` function landed on `65c426aa` and was reverted same-day on `084a5e17`). Three new RPC migrations added — see Helper functions section.
+> **Reflects commit:** `<codebase>@9cdc2a85` (2026-04-30). 7 new AI audit edge functions shipped 29–30 April 2026 (`embed-srto-corpus`, `retrieve-srto-context`, `draft-finding`, `record-finding-decision`, `analyse-evidence`, `draft-executive-summary`, `record-executive-summary-decision`); edge function count updated from 117 → 124. `srto_corpus` (pgvector), `client_audit_response_documents`, `ai_evidence_analysis_usage` tables added. See `reference/ai-audit-stack.md` for the full reference.
 >
 > System design reference for Unicorn 2.0. How everything connects, where logic lives, and the constraints to respect.
 > Reconciled against the `unicorn-cms-f09c59e5` working tree — April 2026. Note: a separate Vivacity Supabase project previously shared the "Unicorn 2.0" name but had different edge functions and module scope. That sibling project is now largely superseded — this doc describes the current codebase.
@@ -29,8 +29,12 @@ Lovable (React + Vite + TS + shadcn + Tailwind — admin/consultant + client UI)
     │        │     │              accountability_functions, accountability_seats,
     │        │     │              accountability_seat_roles, accountability_seat_assignments)
     │        │     └── Audit schema (audit_templates, audit_sections, audit_questions,
-    │        │                       client_audits, audit_findings, audit_actions,
-    │        │                       audit_reports)
+    │        │                       client_audits [+risk_rationale col], audit_findings,
+    │        │                       audit_actions, audit_reports,
+    │        │                       client_audit_responses [+ai_* cols],
+    │        │                       client_audit_response_documents,
+    │        │                       ai_evidence_analysis_usage,
+    │        │                       srto_corpus [pgvector 1536-dim, HNSW])
     │        ├── Auth (email/password, invitation token flow, password reset)
     │        ├── Realtime (EOS live meeting sync via channels)
     │        ├── Storage (tenant documents, audit evidence, avatars)
@@ -47,7 +51,7 @@ Lovable (React + Vite + TS + shadcn + Tailwind — admin/consultant + client UI)
 
 ---
 
-## Edge functions (117 live)
+## Edge functions (124 live)
 
 All in [supabase/functions/](../supabase/functions/). Pattern: service-role Supabase client, manual caller validation, JSON response with `{ ok, code, detail }` error shape.
 
@@ -93,6 +97,18 @@ All in [supabase/functions/](../supabase/functions/). Pattern: service-role Supa
 | `extract-document-fields` | AI field extraction from documents. |
 | `generate-document` / `generate-excel-document` | Document generation. |
 | `help-center-chat` | Help center AI chat. |
+
+**AI audit stack (shipped 29–30 April 2026 — see `reference/ai-audit-stack.md`):**
+
+| Function | Purpose |
+|---|---|
+| `embed-srto-corpus` | Admin-only; PDF → chunk → `text-embedding-3-small` embed → upsert `srto_corpus`. Covers SRTO 2025, National Code 2018, ESOS Act 2000. |
+| `retrieve-srto-context` | Caller-JWT semantic search over `srto_corpus` via `match_srto_chunks()` RPC. Optional framework filter. |
+| `draft-finding` | RAG + Gemini 2.5 Pro finding draft for `at_risk`/`non_compliant` responses; 40/user/day cap; logged to `client_audit_log`. Framework-routed by `compliance_templates.framework`. |
+| `record-finding-decision` | Logs auditor's accepted/edited/rejected decision on an AI finding draft. |
+| `analyse-evidence` | RAG + Gemini 2.5 Pro analysis of linked documents against a question; 30/user/day cap; hallucination guard; persists to `client_audit_responses.ai_*`. |
+| `draft-executive-summary` | Synthesises 4-part executive narrative for a near-complete audit; 5-min cool-down/audit; discriminated-union validator; fabricated-finding-ID guard. |
+| `record-executive-summary-decision` | Logs per-field (executive_summary / overall_finding / risk_rationale) accepted/edited/rejected decisions. |
 
 **Meetings / EOS functions:**
 
@@ -307,6 +323,6 @@ Historical Vivacity docs list five audit-specific storage buckets by name — th
 Track these in [decisions.md → Open Decisions](../pinned/decisions.md#open-decisions). Highlights:
 
 - **Stripe webhooks** — Edge Function or n8n? Subscriptions still not wired.
-- **LLM providers (resolved):** Primary gateway: `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`, serving `google/gemini-2.5-flash` and `google/gemini-3-flash-preview` models via Lovable's AI proxy. Secondary: Direct OpenAI `gpt-4o-mini` in `assistant-answer` with `OPENAI_API_KEY`. Prompt ownership and orchestration routing are still undocumented — flag to RJ.
+- **LLM providers (partially resolved):** Primary gateway: `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`. AI audit stack uses `google/gemini-2.5-pro`; corpus embeddings use `text-embedding-3-small` — both via the Lovable AI Gateway. Legacy functions (`ai-orchestrator`, `compliance-assistant`, etc.) use `google/gemini-2.5-flash` / `google/gemini-3-flash-preview` via the same gateway. Secondary: Direct OpenAI `gpt-4o-mini` in `assistant-answer` with `OPENAI_API_KEY`. Note: Anthropic models are not currently routed by the Lovable AI Gateway — an Anthropic key + direct API call would be required to use Claude in any edge function. Prompt ownership and orchestration routing for legacy functions are still undocumented — flag to RJ.
 - **Lovable environments** — dev / staging / prod separation is not documented.
 - **AI orchestrator scope** — `ai-orchestrator` is a central hub; how is routing and model selection configured?

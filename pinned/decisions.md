@@ -1,6 +1,6 @@
 # Product Decisions (Index)
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-07-24 · **Confidence:** high for recorded entries.
+> **Last updated:** 2026-04-30 · **Reconsider by:** 2026-07-30 · **Confidence:** high for recorded entries.
 >
 > One-line-per-decision index. For full rationale, alternatives, and
 > supersession history, see [../reference/decision-trail.md](../reference/decision-trail.md).
@@ -29,7 +29,10 @@ The legacy ADR-001 through ADR-010 records live in reference/decision-trail.md b
 > **Rule:** open > 6 months with no movement → either delete or escalate.
 > See `kb-hygiene.md → Pruning discipline`.
 
-Intentionally empty as of 2026-04-27. Open decisions will be added as they surface — see reference/decision-trail.md → "Decisions still needing ADRs" for items previously identified as needing follow-up.
+- [2026-04-30] **AI executive summary exemplars** [Angela / Sam] — `draft-executive-summary` system prompt contains `{{EXEMPLARS_PENDING}}`. Sam to supply 2–3 redacted historical executive summaries (one CRICOS/Combined, one CHC/Mock, one Due Diligence) so Angela can replace the placeholder. Without them, output voice is untuned. — next step: Sam delivers redacted examples; Angela pastes into the function and deploys.
+- [2026-04-30] **Corpus population — SRTO 2025** [Angela] — `embed-srto-corpus` exists but no confirmation it has been run against the actual Standards PDFs. Until run, all AI audit tools operate with `corpus_empty = true` (lower quality, but still functional). — next step: Angela confirms run date or schedules the ingestion.
+- [2026-04-30] **Corpus population — National Code 2018 / ESOS Act** [Angela] — National Code 2018, CRICOS Practice Guides, and ESOS Act 2000 PDFs need to be uploaded to `srto-source-documents` and `embed-srto-corpus` run against them before CRICOS audits get framework-specific context. — next step: Angela uploads PDFs and runs embed function.
+- [2026-04-30] **Gemini 2.5 Pro vs Claude for audit voice** [Carl / Angela] — Lovable AI Gateway does not route Anthropic models. Audit AI stack uses Gemini 2.5 Pro. If voice fidelity against Vivacity's existing findings style is insufficient, an Anthropic key + direct API call is the swap path (gateway URL + model ID only). — next step: Angela/Sam run test drafts against real findings; Carl decides.
 
 ---
 
