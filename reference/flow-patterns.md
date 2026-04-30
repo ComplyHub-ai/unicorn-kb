@@ -1,6 +1,6 @@
 # Flow Patterns — Conceptual Walkthroughs
 
-> **Last updated:** 2026-04-22 · **Reconsider by:** 2026-10-22 · **Confidence:** medium — flows are partially inferred; happy paths verified, edge cases and failure modes should be traced against real code before being trusted.
+> **Last updated:** 2026-04-30 · **Reconsider by:** 2026-10-30 · **Confidence:** medium — flows are partially inferred; happy paths verified, edge cases and failure modes should be traced against real code before being trusted.
 >
 > How the core product flows work end-to-end. Use these when tracing bugs, onboarding, or explaining the system to someone who hasn't seen the code.
 
@@ -139,7 +139,118 @@ Admin starts an audit for a client
 
 Hooks: [src/hooks/useAudits.ts](../src/hooks/useAudits.ts), [src/hooks/useAuditTemplates.ts](../src/hooks/useAuditTemplates.ts), [src/hooks/useReusableAuditTemplates.ts](../src/hooks/useReusableAuditTemplates.ts).
 
-**Distinct from old docs:** The current Audits module does **not** include AI-generated reports, document analysis, or the six named AI agents. That's the other Vivacity project. If the spec references `generate-audit-report` edge function, it's not in this codebase.
+**Note:** `generate-audit-report` edge function is still not found. The AI drafting stack (finding drafter, evidence analyser, executive summary drafter) shipped 29–30 April 2026 and lives in this codebase — see flows below.
+
+---
+
+## AI Finding Draft flow
+
+```
+Auditor rates a question at_risk or non_compliant in QuestionCard
+  → "Generate AI Draft" button appears in AddFindingForm
+  → Button click → invoke `draft-finding` edge function
+    → caller-JWT auth → audit-access gate
+    → daily cap check (40/user/day via client_audit_log count)
+    → load response + question + section + audit rows
+    → resolve corpus framework from compliance_templates.framework
+    → semantic retrieval: match_srto_chunks() (up to 6 chunks, threshold 0.65)
+    → Gemini 2.5 Pro → draft JSON
+    → validateDraft(): banned-term guard, overlong-quote guard, structure check
+    → retry once if invalid
+    → service-role log insert to client_audit_log (action: 'ai.finding_drafted')
+    → return draft + provenance (corpus_chunks_used, confidence, tokens, duration)
+  → Auditor reviews draft inline in AddFindingForm
+  → Auditor edits summary / priority / corrective_action fields
+  → Auditor saves → existing finding-save flow persists the finding
+  → record-finding-decision fires (best-effort): logs accepted/edited/rejected + edit_distance_pct
+```
+
+Files: `supabase/functions/draft-finding/`, `supabase/functions/record-finding-decision/`, `src/components/audit/workspace/AddFindingForm.tsx`.
+
+**Failure modes:**
+- Daily cap reached → 429 response; UI should surface "Daily draft limit reached".
+- Corpus empty → draft proceeds with `corpus_empty: true`; model expresses uncertainty. Output is lower quality but structurally valid.
+- Validation fails twice → 422 response; UI falls back to manual entry.
+- Network failure → best-effort; auditor can always write the finding manually.
+
+---
+
+## AI Evidence Analysis flow
+
+```
+Auditor opens QuestionCard → EvidencePanel component visible
+  → "Link Evidence" → document search/select dialog
+    → lists tenant documents (filtered to audit.subject_tenant_id)
+    → auditor selects → insert into client_audit_response_documents
+  → "Analyse Evidence" button → invoke analyse-evidence edge function
+    → caller-JWT auth → audit-access gate
+    → daily cap check (30/user/day via ai_evidence_analysis_usage)
+    → load response + question + linked documents
+    → cross-tenant leakage check (defence-in-depth beyond RLS)
+    → fetch files from storage documents bucket
+    → extract text per file type: PDF (unpdf), DOCX (mammoth), XLSX (xlsx), text (UTF-8)
+    → semantic retrieval: match_srto_chunks()
+    → Gemini 2.5 Pro analysis
+    → hallucination guard: verify each quoted excerpt (≥12 chars) found verbatim in source text
+    → persist suggestion to client_audit_responses.ai_* columns
+    → record usage in ai_evidence_analysis_usage
+    → return suggestion to caller
+  → EvidencePanel shows: rating badge, confidence, excerpts + source attribution, gaps
+  → Auditor chooses:
+      Accept → onAcceptRating(rating, notes) — applies via existing rating/note handlers
+      Override → edit rating/notes → onOverrideRating(rating, notes)
+      Discard → onDiscardSuggestion() — wipes ai_* columns back to null
+```
+
+Files: `supabase/functions/analyse-evidence/`, `src/components/audit/workspace/EvidencePanel.tsx`, `src/components/audit/workspace/QuestionCard.tsx`.
+
+**Failure modes:**
+- Daily cap reached → 429 response.
+- File too large (>25 MB) or too much text (>200k chars) → file skipped, others still processed.
+- All docs fail extraction → analysis proceeds with empty text (model will note thin evidence).
+- Cross-tenant check fails → 403; document must belong to the audit's subject tenant.
+
+---
+
+## AI Executive Summary Draft flow
+
+```
+Near-complete audit open in /audits/:id → ReportTab
+  → "Generate AI Draft" button (gated: requires ≥3 findings)
+  → Button click → invoke draft-executive-summary edge function
+    → caller-JWT auth → audit-access gate
+    → cool-down check: 5 minutes per audit (not daily cap)
+    → minimum findings gate: MIN_FINDINGS_FOR_SYNTHESIS = 3
+    → load all findings + section rollup + audit metadata
+    → per-clause corpus retrieval for most-cited critical/high clauses
+       (up to 8 clauses × 6 chunks each; clause retrieval failures are console.warn only)
+    → Gemini 2.5 Pro → four-part draft JSON
+    → validateDraft() from _validation.ts:
+        - banned-term guard
+        - overlong-quote guard (≤30 words verbatim)
+        - fabricated-finding-ID check: every linked_finding_id must exist in audit
+        - discriminated union return: { ok: true; draft } | { ok: false; reason }
+    → service-role log insert to client_audit_log ONLY if result.ok === true
+    → return draft + provenance
+  → ReportTab displays four fields:
+      executive_summary — editable textarea + Accept/Reject
+      overall_finding   — editable textarea + Accept/Reject
+      risk_rationale    — editable textarea + Accept/Reject
+      action_plan_rollup — read-only with clipboard copy button (ephemeral — NOT persisted)
+  → Auditor edits each field; edit-distance computed client-side (Levenshtein)
+  → Accept on a field → updateAudit() persists field to client_audits
+  → record-executive-summary-decision fires after all decisions: logs per-field
+    decision + edit_distance_pct for executive_summary, overall_finding, risk_rationale
+    (action_plan_rollup excluded by design)
+```
+
+Files: `supabase/functions/draft-executive-summary/`, `supabase/functions/draft-executive-summary/_validation.ts`, `supabase/functions/record-executive-summary-decision/`, `src/components/audit/workspace/ReportTab.tsx`, `src/hooks/useAuditReport.ts`.
+
+**Failure modes:**
+- Cool-down active → 429 with minutes remaining; UI should surface "Please wait N minutes".
+- Fewer than 3 findings → 422; button should be disabled.
+- Validation fails → 422; fallback to manual entry.
+- `action_plan_rollup` is clipboard-only — navigating away before copying discards it.
 
 ---
 

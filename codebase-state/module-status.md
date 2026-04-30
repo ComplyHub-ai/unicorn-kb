@@ -1,8 +1,8 @@
 # Module Status
 
-> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-05-27 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
+> **Last updated:** 2026-04-30 · **Reconsider by:** 2026-05-30 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
 >
-> **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25)
+> **Reflects commit:** `<codebase>@9cdc2a85` (2026-04-30). AI audit stack (7 edge functions, 4 migrations) shipped 29–30 April 2026; Modules 4 and 14 updated accordingly.
 >
 > Live tracker for each module. Grounded in the actual `unicorn-cms-f09c59e5` codebase (April 2026). Many features previously flagged as "historical reference only" are now present in this codebase.
 
@@ -85,7 +85,7 @@
 
 ## 4. Audits & Assessments
 
-**Status:** 🟡 Workspace heavily expanded April 2026; backend still client-side direct DB
+**Status:** 🟡 Workspace heavily expanded; AI drafting stack shipped 29–30 April 2026; audit CRUD still client-side direct DB
 
 **What exists:**
 - Audit templates ([sql-setup/05-audit-schema.sql](../sql-setup/05-audit-schema.sql), `/audits/create-template`)
@@ -104,6 +104,13 @@
 - **Autosave infrastructure (`a0dccf19`, 2026-04-23)** — `UnsavedAuditWorkContext.tsx` provider + `useDebouncedAutosave.ts` hook; replaces an earlier per-component save path that was dropping data on phase switch. If you're touching workspace fields, write through the context, not direct mutations.
 - **Preliminary audit summary (`72ae466e`, `c337d624`, 2026-04-24)** — `SendPreliminarySummaryDialog` + helper `src/lib/buildPreliminaryAuditSummary.ts`; calculates audit completion % for the email body.
 - **Risk rating UI (`cf8d1314`, 2026-04-25)** — `src/components/audit/AuditRiskBadge.tsx`; risk fields surfaced in `OverviewTab`, `FindingsTab`, `ActionsTab`, `AuditSummaryPills`.
+- **AI audit stack (29–30 April 2026)** — full AI drafting pipeline; see `reference/ai-audit-stack.md` for the complete reference.
+  - **SRTO RAG corpus** — `srto_corpus` table (pgvector 1536-dim, HNSW), `srto-source-documents` bucket, `embed-srto-corpus` (Super Admin ingestion), `retrieve-srto-context` (caller-JWT semantic search). Multi-framework: SRTO 2025, National Code 2018, ESOS Act 2000.
+  - **AI Finding Drafter** — `draft-finding` edge function (RAG + Gemini 2.5 Pro, 40/user/day, logged to `client_audit_log`); `record-finding-decision` companion; `AddFindingForm.tsx` AI draft UI.
+  - **AI Evidence Analyser** — `analyse-evidence` edge function (link docs → extract → RAG → Gemini 2.5 Pro → hallucination guard, 30/user/day); persists to `client_audit_responses.ai_*` columns; new `EvidencePanel.tsx` component in `QuestionCard`.
+  - **AI Executive Summary Drafter** — `draft-executive-summary` edge function (synthesises 4-part executive narrative, 5 min cool-down/audit, min 3 findings, discriminated-union validator, fabricated-finding-ID guard); `record-executive-summary-decision` companion; `ReportTab.tsx` AI draft UI; `risk_rationale` column on `client_audits`.
+  - **AI Drafting Insights dashboard** — `/admin/ai-insights` (Super Admin only): `SummaryTiles`, `PatternsPanel`, `RecentDraftsTable`, `DraftDrillDown`; `v_ai_finding_draft_outcomes` view + `ai_drafting_summary()` + `ai_drafting_by_clause()` RPCs.
+  - New tables: `client_audit_response_documents` (evidence linking, full RLS), `ai_evidence_analysis_usage` (daily cap tracking), `srto_corpus` (RAG library, service-role writes only).
 
 **Audit hooks (`src/hooks/`, 17 files):** `useAudits`, `useClientAudits`, `useClientAuditPortal`, `useAuditWorkspace`, `useAuditTemplates`, `useReusableAuditTemplates`, `useAuditPrep`, `useAuditSchedule`, `useAuditScheduler`, `useAuditActionPlan`, `useAuditReferences`, `useAuditReport`, `useComplianceAudits`, `useEngagementAudit`, `useDocumentSyncAudit`, `useStageAuditLink`, `useStageAuditLog` (+ `useUserAudit` for user-action audit log).
 
@@ -112,7 +119,7 @@
 **Backend reality:**
 - **No dedicated audit edge function.** Audit creation, save, and finding mutations all happen via the Supabase JS client direct against `client_audits` / related tables from `useClientAudits.ts` and `useAuditWorkspace.ts`. A `create-client-audit` Edge Function was added on 2026-04-20 (`65c426aa`) and **reverted the same day** (`084a5e17`); it is not at HEAD. If a server-side audit pipeline is wanted, this is greenfield again.
 - AI-adjacent functions still in place: `analyze-document`, `research-audit-intelligence`, `research-evidence-gap-check`, `research-template-gap-analysis`, `scan-document` / `chunk-document` pipeline.
-- **No new audit-related migration in the past week.** All three migrations dated 2026-04-21 / 04-23 are Academy or Packages, not audit (see sections 5 and 16).
+- **AI audit stack (7 new edge functions, 4 migrations, 29–30 April 2026)** — see bullet above and `reference/ai-audit-stack.md`.
 
 **Still not confirmed in codebase:**
 - `generate-audit-report` — not found; confirm with RJ
@@ -286,12 +293,21 @@
 - `calculate-predictive-risk`, `run-tenant-risk-forecast`, `run-strategic-signal-analysis` — ✅ exist
 - `vector-search`, `vector-index-rebuild`, `query-knowledge-graph` — ✅ vector/knowledge layer exists
 
+**AI audit stack (29–30 April 2026 — see `reference/ai-audit-stack.md`):**
+- `embed-srto-corpus` — Super Admin ingestion; PDF → chunk → embed (text-embedding-3-small) → `srto_corpus`. Multi-framework: SRTO 2025, National Code 2018, ESOS Act 2000.
+- `retrieve-srto-context` — caller-JWT semantic search over `srto_corpus`.
+- `draft-finding` — RAG + Gemini 2.5 Pro finding draft; 40/user/day; append-only log.
+- `record-finding-decision` — companion decision log (accepted/edited/rejected).
+- `analyse-evidence` — RAG + Gemini 2.5 Pro evidence analysis from linked documents; 30/user/day; hallucination guard.
+- `draft-executive-summary` — synthesises four-part executive narrative; 5-min cool-down/audit; discriminated-union validator.
+- `record-executive-summary-decision` — companion per-field decision log.
+
 **Not confirmed:**
 - Six named AI agents (Alex, Casey, Morgan, Jordan, Riley, Sam) — check if these map to existing functions
 - `generate-audit-report` — not found
 
 **Unresolved:**
-- LLM provider(s) and model configuration across the AI functions — undocumented. Grep function sources.
+- LLM providers — partially resolved. Audit AI stack: Gemini 2.5 Pro + text-embedding-3-small, both via Lovable AI Gateway (`LOVABLE_API_KEY`). Legacy functions (`ai-orchestrator`, `compliance-assistant`, etc.) — model config still undocumented.
 
 ---
 
