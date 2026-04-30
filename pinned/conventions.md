@@ -227,6 +227,65 @@ updated_at   timestamptz NOT NULL DEFAULT now()
 
 Apply the `updated_at` trigger (standard across the project — see existing migrations for the trigger function).
 
+### dd_ tables — user-manageable lookup values
+
+**The principle:** configuration belongs to data, not code. Any
+list of options that drives a dropdown, filter, badge, status,
+type, category, or selector in the platform must live in a `dd_`
+prefixed database table — never hardcoded in frontend code,
+TypeScript enums, or migration CHECK constraints.
+
+The test: if Angela could ever want to add, rename, or deactivate
+an option without calling a developer, it belongs in a `dd_` table.
+
+**Standard structure** (match `dd_priority` exactly):
+
+```sql
+CREATE TABLE public.dd_<name> (
+  code        serial PRIMARY KEY,
+  value       text NOT NULL UNIQUE,
+  label       text NOT NULL,
+  sort_order  integer NOT NULL DEFAULT 0,
+  is_active   boolean NOT NULL DEFAULT true
+);
+
+ALTER TABLE public.dd_<name> ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read dd_<name>"
+  ON public.dd_<name>
+  FOR SELECT TO authenticated USING (true);
+```
+
+- `value` — raw string stored in DB and compared in code
+- `label` — human-readable string shown in UI
+- `sort_order` — controls display order in dropdowns
+- `is_active` — soft toggle; inactive rows hidden from dropdowns
+  but preserved for historical records
+- No write policy — writes are Super Admin only via Code Tables
+  Management UI
+
+**Frontend pattern** — follow `useActionStatusOptions.ts` exactly:
+- Module-level cache + promise deduplication
+- Query: `.eq('is_active', true).order('sort_order')`
+- Returns `{ value, label }` pairs
+- Hook name: `use<Name>Options` (e.g. `useAuditTypeOptions`)
+
+**When a `dd_` table drives a FK constraint:**
+- Target column must be `value` (UNIQUE NOT NULL)
+- Use FK instead of CHECK constraint — FK is self-maintaining,
+  CHECK gets out of sync (origin: client_audits April 2026)
+- Include orphan-row safety check in the migration that aborts
+  before any structural change if unexpected data exists
+
+**Before creating a new `dd_` table:**
+Check whether one already exists — 40+ `dd_` tables exist as of
+April 2026. Query `information_schema.tables WHERE table_name
+LIKE 'dd_%'` in the Supabase SQL editor first.
+
+**Origin:** Dave direction, 29 April 2026. First applied via
+`dd_audit_type` conversion. See
+`unicorn-audit/audit/2026-04-29-audit-type-fixes-and-dd-conversion.md`.
+
 ### Coercion triggers for NOT NULL + frontend writes
 
 Lovable-generated forms may send explicit `NULL` on submit, which overrides column defaults. Protect NOT NULL columns:

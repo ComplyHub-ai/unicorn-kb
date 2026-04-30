@@ -175,6 +175,41 @@ The current allowed values (post April 2026 fix) are:
 
 ---
 
+## Design gates
+
+These checks run during feature design — before writing any Lovable prompt. They catch structural mistakes that regression traps cannot, because the mistake happens at the design stage, not the shipping stage.
+
+### dd_ table check — configuration belongs to data, not code
+
+Run this check during feature design, before writing any Lovable
+prompt. Ask: does this feature introduce any selectable options,
+types, statuses, categories, or classifications that a user could
+ever want to change without developer help?
+
+- If YES → it needs a `dd_` table, not a hardcoded list. Never
+  hardcode options in the frontend, a TypeScript enum, or a CHECK
+  constraint. Follow `conventions.md → dd_ tables` before
+  designing the schema. Check if the table already exists first —
+  40+ `dd_` tables exist as of April 2026. Query
+  `information_schema.tables WHERE table_name LIKE 'dd_%'` in
+  the Supabase SQL editor before creating a new one.
+- If NO → continue.
+
+The principle: configuration belongs to data, not code. Super
+Admins manage options through the Code Tables Management UI.
+Developers build features, not lists.
+
+The `client_audits.audit_type` bug (April 2026) is the canonical
+example of what happens when this rule is skipped — a hardcoded
+CHECK constraint got out of sync with the frontend enum and
+silently blocked production inserts for weeks before being caught.
+
+(Dave direction, 29 April 2026. Applied first via dd_audit_type
+conversion — see
+unicorn-audit/audit/2026-04-29-audit-type-fixes-and-dd-conversion.md)
+
+---
+
 ## Page-specific smoke-test reference
 
 Quick checklist per page for the highest-risk pages in the platform.
