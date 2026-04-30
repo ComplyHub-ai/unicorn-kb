@@ -98,6 +98,14 @@ Full navigational map: [codebase-map.md](../codebase-state/codebase-map.md).
 3. **Lovable owns schema in practice.** Lovable users (Angela, Dave, Khian — see `team-roles.md`) push schema migrations alongside frontend code direct to `main`. There is no pre-merge review or sign-off gate. The three-step RLS ritual (item 2 above) is the *correct* technical pattern, but enforcement is post-merge — see `reference/decision-trail.md → ADR-011` for the operating-model rationale and risk acceptance. Hand-written code via Claude Code lands via PR on a feature branch (also without mandatory review).
 4. **Edge functions validate the caller manually.** Always `supabase.auth.getUser(callerToken)` then check `unicorn_role` / `tenant_id`. The service-role key bypasses RLS, so the function is the only enforcement point.
 5. **Column defaults are not enough.** For NOT NULL columns the frontend may explicitly set to `NULL`, add a coercion trigger. See [decision-trail.md](../reference/decision-trail.md#adr-008).
+6. **Configuration belongs to data, not code.** Any selectable
+   option, type, status, category, or classification that a Super
+   Admin could ever want to change without developer help must live
+   in a `dd_` prefixed database table — not hardcoded in the
+   frontend, a TypeScript enum, or a CHECK constraint. Developers
+   build features. Super Admins configure them. See
+   `conventions.md → dd_ tables — user-manageable lookup values`.
+   (Dave direction, April 2026.)
 
 ---
 
