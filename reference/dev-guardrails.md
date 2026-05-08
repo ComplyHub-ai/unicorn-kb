@@ -175,6 +175,31 @@ The current allowed values (post April 2026 fix) are:
 
 ---
 
+### Trap 8 — Dropping an index that a live function depends on via a different ON CONFLICT pattern
+
+**Pattern:** A table has duplicate indexes and the fix drops all but one. The diagnosis checks the index definitions and picks the "best" one to keep, but does not check every ON CONFLICT clause across all live functions and edge functions.
+
+**Risk:** PostgreSQL's `ON CONFLICT (col)` and `ON CONFLICT (col) WHERE condition` are different conflict targets — each requires a different index type as its arbiter. A partial unique index (`WHERE col IS NOT NULL`) cannot satisfy `ON CONFLICT (col)` without a WHERE clause. A non-partial unique index cannot satisfy `ON CONFLICT (col) WHERE col IS NOT NULL`. If multiple live functions use different patterns on the same column, you need both index types. Dropping the wrong one causes a PostgreSQL runtime error on every affected insert — silent until that code path fires in production.
+
+**Origin:** May 2026 — `user_notifications.dedupe_key` had three indexes (one non-partial, two identical partials). The bug doc said to keep one partial index and drop the other two. Diagnosis confirmed the index definitions matched but did not check all ON CONFLICT patterns. Step 3 (blast radius) caught that two live trigger functions used `ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING` (needs the partial index) while two other trigger functions and two edge functions used `ON CONFLICT (dedupe_key) DO NOTHING` without WHERE (needs the non-partial). The fix was revised: drop only the duplicate partial index, keeping both the non-partial and one partial.
+
+**Rule:** When diagnosing index redundancy on any table, always:
+1. List every ON CONFLICT clause across every migration function body and edge function that inserts into that table.
+2. Group them by pattern: with WHERE, without WHERE, plain insert.
+3. Confirm a surviving index exists for each pattern before declaring any index safe to drop.
+
+```sql
+-- Quick check: all functions that reference the table
+SELECT routine_name
+FROM information_schema.routines
+WHERE routine_definition ILIKE '%<table_name>%'
+AND routine_schema = 'public';
+```
+
+Then grep migration files and edge functions for `ON CONFLICT` patterns on that table's columns.
+
+---
+
 ## Design gates
 
 These checks run during feature design — before writing any Lovable prompt. They catch structural mistakes that regression traps cannot, because the mistake happens at the design stage, not the shipping stage.
