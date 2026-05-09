@@ -17,6 +17,7 @@
 | Are reconciling after a Lovable remix (Carl only) | [post-lovable-remix.md](post-lovable-remix.md) |
 | Are a non-technical stakeholder with a KB proposal | [non-technical-proposal.md](non-technical-proposal.md) |
 | Are implementing a production database change via Lovable (migrations, FKs, triggers, RLS, data fixes) | [lovable-production-db-change.md](lovable-production-db-change.md) |
+| Need Codex or Claude to inspect Supabase without write access | [supabase-mcp-read-only.md](supabase-mcp-read-only.md) |
 | Ask Viv crashes or compliance mode is broken ("Something went wrong") | [ask-viv-fix-procedure.md](ask-viv-fix-procedure.md) |
 
 ---
