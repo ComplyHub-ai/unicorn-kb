@@ -374,9 +374,11 @@
 
 ## 18. Academy — Professional Development Plan (PDP)
 
-**Status:** 🟡 Schema applied; UI not started
+**Status:** 🟠 Schema + most UI shipped; 4 gaps remaining (see follow-up prompts)
 
-**What exists (schema only — applied 11 May 2026 to `yxkgdalkbrriasiyyrwk`):**
+**Last cross-checked:** 12 May 2026 (`unicorn-cms-f09c59e5` HEAD `aa81aab0`)
+
+**Schema (applied 11 May 2026 to `yxkgdalkbrriasiyyrwk` — live but NOT in repo migrations; run `supabase db pull` before next DB session):**
 - `pdp_audiences` — five audience categories with default target PD hours (Trainer 20h, Compliance Manager 15h, Governing Person 8h, Student Support Officer 12h, Administration Assistant 10h)
 - `pdp_cycles` — annual PDP cycle per user per tenant
 - `pdp_goals` — development goals mapped to a Standard (`standards_reference.standard_id`)
@@ -389,20 +391,32 @@
 
 **Standards anchoring:** `pdp_goals.standard_id` → `standards_reference`. Satisfies SRTO 2025 Standards 3.1, 3.2, 3.3 and the Credential Policy CPD obligations.
 
-**Lovable prompts:** 12 prompts ready at `handoffs/pdp-lovable-prompts.md`. Run order is numeric.
+**Shipped UI (Lovable Prompts 1–10, 12 core):**
+- `src/features/pdp/` — types, API helpers, hooks, workforce queries all present
+- `src/pages/academy/pdp/index.tsx` — learner dashboard (progress dial, currency traffic light, action row, recommended courses, recent evidence, empty-state CTA)
+- `src/pages/academy/pdp/cycle/[cycleId].tsx` — cycle detail with 5 tabs, right-rail export card, Close Cycle dialog
+- `src/features/pdp/components/` — StandardsPicker, GoalSheet, EvidenceSheet all present
+- `src/components/academy/pdp/QuickReflectionDrawer.tsx` — built but not yet wired (see gap F14)
+- `src/pages/academy/pdp/reviews.tsx` — manager review hub and ReviewComposerDrawer
+- `src/pages/superadmin/workforce-pdp.tsx` — workforce dashboard with KPI tiles, table, CSV export
+- `supabase/functions/pdp-auto-evidence/` — auto-evidence on course completion (idempotent)
+- `src/pages/client/StaffPdpsPage.tsx` — tenant admin staff PDPs view (CSV export only; ZIP pending)
+- Storage bucket `academy-evidence` — private, 10 MB, correct MIME types, RLS policies
 
-**Highlights:**
-- Prompts 1–2: regenerate types, scaffold `/academy/pdp` routes, build the learner dashboard.
-- Prompts 3–6: cycle detail page, Standards picker, goal sheet, evidence sheet (incl. private bucket `academy-evidence`).
-- Prompt 7: in-lesson reflection drawer wired to `showCelebration` state in `AcademyLessonViewerPage`.
-- Prompts 8–9: manager review/sign-off; Vivacity SuperAdmin workforce PDP dashboard.
-- Prompts 10–11: Edge Functions for auto-evidence on completion and audit-ready DOCX export.
-- Prompt 12: tenant-admin "my staff PDPs" view (Phase 1.5; RLS already permits).
+**Routes registered in `src/App.tsx`:** `/academy/pdp`, `/academy/pdp/reviews`, `/academy/pdp/cycle/:cycleId`, `/superadmin/workforce-pdp`, `/client/staff-pdps`
 
-**Remaining:**
-- All 12 Lovable prompts (UI, Edge Functions, nav integration)
-- DOCX export template (`doc-templates` bucket, `pdp/pdp-cycle-export-v1.docx`) — to be authored separately
-- Private `academy-evidence` bucket — created by Prompt 6
+**Remaining gaps — follow-up prompts at `handoffs/pdp-follow-up-prompts.md`:**
+
+| Follow-up | What | Status |
+|-----------|------|--------|
+| F13 | Add PDP to Academy sidebar nav (`navigationConfig.ts`) | ❌ Not done |
+| F14 | Wire `QuickReflectionDrawer` into `AcademyLessonViewerPage` on `showCelebration` | ❌ Not done |
+| F15-pre | Create `doc-templates` + `generated-docs` storage buckets (migration — DB change workflow applies) | ❌ Not done |
+| F15 | `supabase/functions/pdp-export/` Edge Function (DOCX export) | ❌ Not done |
+| F16 | ZIP audit pack in `StaffPdpsPage` (depends on F15) | ❌ Not done |
+
+**Also remaining:**
+- DOCX export template to be authored and uploaded to `doc-templates/pdp/pdp-cycle-export-v1.docx` — brand spec in `handoffs/pdp-lovable-prompts.md` under Prompt 11
 - Calibration of default `target_pd_hours_default` per audience (current values are placeholders)
 
 ---
