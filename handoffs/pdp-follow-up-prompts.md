@@ -3,16 +3,18 @@
 **Module:** Vivacity Academy → Professional Development Plan (PDP)  
 **Addresses gaps from:** `handoffs/pdp-lovable-prompts.md` (Prompts 1–12)  
 **Cross-checked against codebase:** 12 May 2026 (`unicorn-cms-f09c59e5` HEAD `aa81aab0`)  
-**Run order:** Sequential. Prompt F13 and F14 are UI-only and can run in either order. Prompt F15 requires the storage buckets (F15-pre) deployed first. Prompt F16 depends on F15.
+**Run order:** F-RLS first (blocks manual cycle creation). F13 and F14 are UI-only and can run in either order after that. F15-pre before F15. F16 depends on F15.
 
 ---
 
 ## Why these prompts exist
 
-A codebase audit on 12 May 2026 found that Prompts 1–10 and 12 (core) shipped clean but four gaps remain:
+A codebase audit on 12 May 2026 found that Prompts 1–10 and 12 (core) shipped clean but gaps remain. A live RLS check on 12 May 2026 also found two blocking policy bugs on `pdp_cycles`:
 
-| Gap | Prompt that missed it | Follow-up |
-|-----|----------------------|-----------|
+| Gap | Source | Follow-up |
+|-----|--------|-----------|
+| No INSERT policy for users on `pdp_cycles` — "Start your PDP cycle" CTA fails | RLS audit | F-RLS |
+| UPDATE `with_check` prevents status → 'completed' — "Close cycle" fails for users | RLS audit | F-RLS |
 | PDP nav link not in Academy sidebar | Prompt 1 | F13 |
 | `QuickReflectionDrawer` built but not wired into lesson viewer | Prompt 7 | F14 |
 | `supabase/functions/pdp-export/` entirely absent | Prompt 11 | F15-pre + F15 |
@@ -48,6 +50,47 @@ A codebase audit on 12 May 2026 found that Prompts 1–10 and 12 (core) shipped 
 | Tenant context hook | `useClientTenant()` from `@/contexts/ClientTenantContext` — exposes `activeTenantId: number | null`. |
 | Superadmin route guard | `<ProtectedRoute requireSuperAdmin>` in `src/App.tsx`. |
 | RBAC hook | `useRBAC()` from `@/hooks/useRBAC` — exposes `isSuperAdmin`, `isVivacityTeam`. |
+
+---
+
+## Prompt F-RLS — Fix pdp_cycles INSERT and close-cycle policies
+
+**Type:** Supabase migration — triggers the full DB change workflow from `handoffs/lovable-production-db-change.md` before running. **This is a blocker: run before any user can create a cycle from the UI.**
+
+**Problem 1:** `pdp_cycles` has no INSERT policy for regular authenticated users. The `createCycle()` helper (called from the "Start your PDP cycle" empty-state CTA and the start-cycle modal) executes via the browser supabase client. Without an INSERT policy it fails with an RLS violation for all non-Vivacity users. The auto-evidence Edge Function is unaffected (uses service role), but manual cycle creation is blocked.
+
+**Problem 2:** The existing `pdp_cycles: users update own while open` UPDATE policy has `with_check: user_id = auth.uid() AND status IN ('planning', 'active')`. When a user closes their cycle (status → `'completed'`), the new row fails the `with_check`. The "Close cycle" button silently fails for all non-Vivacity users.
+
+Apply a single migration that:
+
+1. Adds a new INSERT policy:
+   ```sql
+   CREATE POLICY "pdp_cycles: users create own"
+   ON public.pdp_cycles
+   FOR INSERT
+   TO authenticated
+   WITH CHECK (user_id = auth.uid());
+   ```
+
+2. Drops the existing UPDATE policy and recreates it with a corrected `with_check`:
+   ```sql
+   DROP POLICY "pdp_cycles: users update own while open" ON public.pdp_cycles;
+
+   CREATE POLICY "pdp_cycles: users update own while open"
+   ON public.pdp_cycles
+   FOR UPDATE
+   TO authenticated
+   USING (
+     user_id = auth.uid()
+     AND status = ANY(ARRAY['planning', 'active', 'under_review'])
+   )
+   WITH CHECK (
+     user_id = auth.uid()
+   );
+   ```
+   The `USING` clause (which rows can be updated) stays restrictive — users cannot reopen a completed or archived cycle. The `WITH CHECK` (what the new row must look like) only requires ownership — allowing any valid forward status transition.
+
+No other changes. Do not touch any other table's policies.
 
 ---
 
@@ -167,6 +210,8 @@ Do not change the separate "Export CSV" button — it should remain unchanged.
 
 ## Done-when checklist (follow-up scope only)
 
+- [ ] A regular user (non-Vivacity staff) can create a new PDP cycle from the "Start your PDP cycle" CTA without an RLS error
+- [ ] A regular user can close their own active cycle; status changes to `'completed'` without an RLS error
 - [ ] PDP appears in the Academy sidebar under "My Courses" on the `/academy/*` layout
 - [ ] Completing a lesson triggers `QuickReflectionDrawer`; skip works; save inserts a `pdp_reflections` row with `lesson_progress_id`
 - [ ] `doc-templates` and `generated-docs` storage buckets exist in Supabase
