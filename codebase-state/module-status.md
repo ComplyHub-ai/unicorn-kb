@@ -1,8 +1,8 @@
 # Module Status
 
-> **Last updated:** 2026-04-30 · **Reconsider by:** 2026-05-30 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
+> **Last updated:** 2026-05-11 · **Reconsider by:** 2026-06-30 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
 >
-> **Reflects commit:** `<codebase>@9cdc2a85` (2026-04-30). AI audit stack (7 edge functions, 4 migrations) shipped 29–30 April 2026; Modules 4 and 14 updated accordingly.
+> **Reflects commit:** `<codebase>@893fc01a` (2026-05-11). AI audit stack (7 edge functions, 4 migrations) shipped 29–30 April 2026; Modules 4 and 14 updated accordingly. PDP schema applied 11 May 2026 (Module 18 added).
 >
 > Live tracker for each module. Grounded in the actual `unicorn-cms-f09c59e5` codebase (April 2026). Many features previously flagged as "historical reference only" are now present in this codebase.
 
@@ -372,6 +372,41 @@
 
 ---
 
+## 18. Academy — Professional Development Plan (PDP)
+
+**Status:** 🟡 Schema applied; UI not started
+
+**What exists (schema only — applied 11 May 2026 to `yxkgdalkbrriasiyyrwk`):**
+- `pdp_audiences` — five audience categories with default target PD hours (Trainer 20h, Compliance Manager 15h, Governing Person 8h, Student Support Officer 12h, Administration Assistant 10h)
+- `pdp_cycles` — annual PDP cycle per user per tenant
+- `pdp_goals` — development goals mapped to a Standard (`standards_reference.standard_id`)
+- `pdp_evidence_items` — polymorphic evidence rows (12 types); FKs to `academy_enrollments`, `academy_certificates`
+- `pdp_reflections` — in-lesson and ad-hoc reflection notes; FK to `academy_lesson_progress`
+- `pdp_reviews` — manager mid- and end-cycle reviews
+- `v_pdp_cycle_summary` — per-cycle hours, goals, and percent_complete rollups (`security_invoker = true`)
+- `v_pdp_user_currency` — latest cycle status with traffic-light `currency_status` (`security_invoker = true`)
+- 21 RLS policies. Three-tier pattern: Vivacity staff ALL, tenant admins SELECT, users manage own cycle data.
+
+**Standards anchoring:** `pdp_goals.standard_id` → `standards_reference`. Satisfies SRTO 2025 Standards 3.1, 3.2, 3.3 and the Credential Policy CPD obligations.
+
+**Lovable prompts:** 12 prompts ready at `handoffs/pdp-lovable-prompts.md`. Run order is numeric.
+
+**Highlights:**
+- Prompts 1–2: regenerate types, scaffold `/academy/pdp` routes, build the learner dashboard.
+- Prompts 3–6: cycle detail page, Standards picker, goal sheet, evidence sheet (incl. private bucket `academy-evidence`).
+- Prompt 7: in-lesson reflection drawer wired to `showCelebration` state in `AcademyLessonViewerPage`.
+- Prompts 8–9: manager review/sign-off; Vivacity SuperAdmin workforce PDP dashboard.
+- Prompts 10–11: Edge Functions for auto-evidence on completion and audit-ready DOCX export.
+- Prompt 12: tenant-admin "my staff PDPs" view (Phase 1.5; RLS already permits).
+
+**Remaining:**
+- All 12 Lovable prompts (UI, Edge Functions, nav integration)
+- DOCX export template (`doc-templates` bucket, `pdp/pdp-cycle-export-v1.docx`) — to be authored separately
+- Private `academy-evidence` bucket — created by Prompt 6
+- Calibration of default `target_pd_hours_default` per audience (current values are placeholders)
+
+---
+
 ## Summary matrix
 
 | Module | Current status | Delta from earlier survey |
@@ -393,5 +428,6 @@
 | ClickUp | ✅ | Task + time sync |
 | Academy | ✅ | Fully shipped — ~30 pages, 22 components, 9 hooks, role-specific client views, superadmin builder |
 | Resource Hub | ✅ | Shipped — 12 staff + client routes, categorised library |
+| **Academy PDP** | 🟡 | Schema applied 11 May 2026 (6 tables, 2 views, 21 RLS policies). UI not yet built — 12 Lovable prompts ready in `handoffs/pdp-lovable-prompts.md`. |
 
 See [migration-1to2.md](../reference/migration-1to2.md) for what came from Unicorn 1.0 and what's net-new.
