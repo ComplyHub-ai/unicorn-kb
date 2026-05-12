@@ -39,6 +39,12 @@ The audit must cover:
 - Rollback plan for every step
 - Any design decisions required before coding (surface these explicitly)
 
+**If the session creates or replaces any function**, include this requirement in the audit prompt:
+
+> *"All new or replaced functions must use `SET search_path = ''` (empty string, not `'public'`). All object references in the function body must be fully schema-qualified (e.g. `public.my_function()`, not `my_function()`). `REVOKE ALL ON FUNCTION ... FROM PUBLIC` and explicitly grant only to `authenticated` or `service_role` as appropriate."*
+
+See `pinned/conventions.md → Function hardening` for the full checklist.
+
 End the prompt with: *"Finish with a proposed implementation plan in numbered steps, a risk assessment, and a list of anything that needs a design decision before proceeding."*
 
 Review the findings report with the relevant stakeholder before proceeding.
