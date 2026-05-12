@@ -409,8 +409,8 @@
 
 | Follow-up | What | Status |
 |-----------|------|--------|
-| F13 | Add PDP to Academy sidebar nav (`navigationConfig.ts`) | ❌ Not done |
-| F14 | Wire `QuickReflectionDrawer` into `AcademyLessonViewerPage` on `showCelebration` | ❌ Not done |
+| F13 | Add PDP to Academy sidebar nav (`AcademyLayout.tsx` `academyMainItems`) | ✅ Done — `f6a37e7b` |
+| F14 | Wire `QuickReflectionDrawer` into `AcademyLessonViewerPage` on lesson completion | ✅ Done — already implemented per-lesson (more robust than spec) |
 | F15-pre | Create `doc-templates` + `generated-docs` storage buckets (migration — DB change workflow applies) | ❌ Not done |
 | F15 | `supabase/functions/pdp-export/` Edge Function (DOCX export) | ❌ Not done |
 | F16 | ZIP audit pack in `StaffPdpsPage` (depends on F15) | ❌ Not done |

@@ -29,9 +29,9 @@ Views: `v_pdp_cycle_summary`, `v_pdp_user_currency`
 | Fact | Detail |
 |---|---|
 | Lesson viewer | `src/pages/client/AcademyLessonViewerPage.tsx`. Route: `/academy/course/:slug/lesson/:lessonId`. |
-| Lesson completion hook | `src/hooks/academy/useCompleteEnrollment.ts`. Calls `supabase.rpc('complete_academy_enrollment')`. `showCelebration` state in the viewer page fires on auto-complete. |
+| Lesson completion hook | `src/hooks/academy/useCompleteEnrollment.ts`. Calls `supabase.rpc('complete_academy_enrollment')`. `showCelebration` fires on **course** (enrollment) completion only — NOT individual lesson completion. Per-lesson completion is detected via a `completedLessonIds` / `currentProgress.is_completed` transition in the viewer. |
 | Academy page shell | `AcademyPageWrapper` from `@/components/academy/AcademyPageWrapper`. Props: `title`, `subtitle`, `icon`, `accentColour` (Australian spelling). |
-| Navigation config | `src/config/navigationConfig.ts` → `academyMenuSections` array. Do NOT edit any sidebar component directly. |
+| Navigation config | **`navigationConfig.ts` is not used by `AcademyLayout.tsx`** — the layout has its own hardcoded arrays (`academyPathwaysItems`, `academyMainItems`, etc.). Edit `src/components/layout/AcademyLayout.tsx` directly to add/remove nav items. |
 | Shared edge function helpers | `_shared/cors.ts` and `_shared/supabase-client.ts` (not `supabase.ts`). |
 | Tenant context hook | `useClientTenant()` from `@/contexts/ClientTenantContext` — exposes `activeTenantId: number | null`. |
 | Superadmin route guard | `<ProtectedRoute requireSuperAdmin>` in `src/App.tsx` — matches all existing `/superadmin/*` routes. |
