@@ -324,6 +324,55 @@ Whether to apply this pattern to tasks/emails/documents in 2.0 is an open questi
 - There is no pre-merge migration review gate today (see `reference/decision-trail.md → ADR-011`). Lovable-generated migrations land direct on `main`; hand-written migrations should be self-reviewed against the New table checklist below.
 - If the migration adds a table with mixed staff+client access, the three-step RLS ritual MUST be in the same migration.
 
+### Function hardening
+
+Every new or replaced `public` schema function **must** include all three of these, in this order, immediately after `LANGUAGE` / volatility / `SECURITY DEFINER`:
+
+```sql
+SECURITY DEFINER
+SET search_path = ''   -- empty string, not 'public'
+AS $function$
+```
+
+**Why empty string, not `'public'`:**
+- `SET search_path = 'public'` prevents the caller injecting their session search_path (good), but still allows a malicious object in `public` to shadow an unqualified call inside the function body.
+- `SET search_path = ''` closes that second vector entirely — every reference must be schema-qualified or PostgreSQL refuses to resolve it.
+
+**Consequence:** with `search_path = ''`, every object reference in the function body must carry an explicit schema prefix:
+
+```sql
+-- Wrong (breaks with empty search_path)
+PERFORM normalise_abn(NEW.abn);
+SELECT id FROM tenant_users WHERE ...
+
+-- Correct
+PERFORM public.normalise_abn(NEW.abn);
+SELECT id FROM public.tenant_users WHERE ...
+
+-- These are always fine — pg_catalog is always searched regardless
+SELECT now(), COALESCE(...), BTRIM(...)
+```
+
+`auth.uid()`, `auth.users`, `extensions.*` — already schema-qualified everywhere; no change needed.
+
+**Existing 28 functions patched 12 May 2026** currently use `SET search_path = 'public'` (P1-e). Upgrading them to `= ''` requires a body audit first — see `pinned/decisions.md → P1-e-ii`. Do not swap them without that audit.
+
+**Lovable prompt guardrail — include this line in every prompt that creates or replaces a function:**
+
+> *"All new or replaced functions must use `SET search_path = ''` (empty string). All object references in the function body must be fully schema-qualified (e.g. `public.my_function()`, not `my_function()`). Do not use `SET search_path = 'public'`."*
+
+---
+
+## New function checklist (literal, use this)
+
+Before merging a migration that creates or replaces a function:
+
+- [ ] `SECURITY DEFINER` — included if the function accesses `auth.*` or bypasses RLS?
+- [ ] `SET search_path = ''` — empty string, not `'public'`?
+- [ ] Every non-`pg_catalog` reference fully qualified with schema prefix?
+- [ ] `REVOKE ALL ON FUNCTION ... FROM PUBLIC` + `GRANT EXECUTE ... TO authenticated` (or `service_role`) — added?
+- [ ] `anon` EXECUTE **not** granted (Supabase may auto-extend — check `information_schema.routine_privileges`)?
+
 ---
 
 ## New table checklist (literal, use this)
@@ -351,6 +400,8 @@ Before merging a migration that creates a table:
 - Don't cache the Supabase client per-component — use the singleton from `src/integrations/supabase/client.ts`.
 - Don't put tenant-ID checks on the frontend as the only line of defense. RLS first; frontend filters for UX.
 - Don't mix `react-query` with ad-hoc `useEffect` fetches for the same data. Pick one per surface.
+- Don't use `SET search_path = 'public'` in new functions — use `SET search_path = ''` and fully-qualify all object references. `= 'public'` is the legacy state of 28 existing functions awaiting P1-e-ii; don't add to that list.
+- Don't grant `EXECUTE` to `anon` or `PUBLIC` on any function — Supabase may auto-extend grants; always check `information_schema.routine_privileges` after applying a function migration.
 - Don't derive summary counts (totals, status breakdowns, load distributions) from a paginated array's `.length`. Use a dedicated count query — paginating the list silently breaks any stat card that reads from it.
 - Don't return `null` as the error branch for a failed fetch. Always render a heading, description, and retry action so the user is not stranded on a blank screen.
 
