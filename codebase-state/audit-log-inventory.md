@@ -1,16 +1,20 @@
 # Audit Log Inventory & Canonical Ledger Gap
 
-> **Last updated:** 2026-05-11 · **Reconsider by:** 2026-08-11 · **Confidence:** high — all tables verified in migrations; schema details extracted from migration files.
+> **Last updated:** 2026-05-12 · **Reconsider by:** 2026-08-11 · **Confidence:** high — all tables verified in migrations; schema details extracted from migration files and confirmed via live DB query.
 >
-> **Reflects commit:** `<codebase>@893fc01a` (2026-05-11).
+> **Reflects commit:** `<codebase>@f913ac1c` (2026-05-12).
 >
 > Documents the current state of audit logging across the Unicorn codebase and scopes the architectural gap between the existing domain-specific tables and a workspace-wide canonical ledger.
+>
+> **2026-05-12 update:** `audit_user_events` now exists as a tracked migration (`20260511004744`). See update to Background section below. `is_vivacity_team_safe` hardened with `SET row_security = off` in the same migration — see audit `2026-05-12-recover-untracked-migrations-may11`.
 
 ---
 
 ## Background
 
-The `audit_user_events` concept originated in the original ComplyHub research and was described as the right shape for user-profile events. It does not exist in the Unicorn codebase. What exists instead is a proliferation of domain-specific `*_audit_log` tables — fifteen at last count — each created independently by Lovable with no shared schema contract. This document inventories those tables, characterises the schema inconsistencies, and scopes what a canonical ledger would need to cover.
+The `audit_user_events` concept originated in the original ComplyHub research and was described as the right shape for user-profile events. ~~It does not exist in the Unicorn codebase.~~ **As of migration `20260511004744` (committed to git 12 May 2026), `audit_user_events` exists as a tracked table.** It has 0 rows — the write path is intentionally absent pending integration with `enrol_as_impersonator` (TICKET-003) and the accept-invitation flow (BUG-005). Schema: `id uuid PK`, `actor_user_uuid uuid NULL`, `target_user_uuid uuid NOT NULL`, `action text NOT NULL`, `reason text NULL`, `details jsonb NULL`, `created_at timestamptz NOT NULL`. RLS enabled; two SELECT policies (own events + superadmin); no INSERT policy. No `tenant_id` — add alongside the write path before any rows accumulate.
+
+What exists in addition is a proliferation of domain-specific `*_audit_log` tables — fifteen at last count — each created independently by Lovable with no shared schema contract. This document inventories those tables, characterises the schema inconsistencies, and scopes what a canonical ledger would need to cover.
 
 ---
 
