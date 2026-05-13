@@ -3,6 +3,19 @@
 > **Last updated:** 2026-05-13 · **Reconsider by:** 2026-08-13 · **Confidence:** high — all tables verified via live DB query against `yxkgdalkbrriasiyyrwk` on 13 May 2026.
 >
 > **Reflects commit:** `<codebase>@a171ca97` (2026-05-13). Live DB queried directly; prior versions were based on migration file inspection and undercounted by ~25 tables.
+>
+> **Priority:** P1 (downgraded from P0 on 13 May 2026). Original P0 classification was based on a mistaken assumption that `audit_log` was the canonical ledger with broken writes. `audit_log` has 0 rows and is a dead Unicorn 1.0 legacy table. The real gap is the absence of a federated view — an ops capability gap, not a live breakage.
+
+---
+
+## What this enables — four scenarios (build order: A → B → C → D)
+
+| Scenario | Description | Prerequisite |
+|----------|-------------|--------------|
+| **A — Incident lookup** | Client reports something changed. One query in Studio or MCP gives the full cross-module picture. | Phase 2 view |
+| **B — Compliance export** | Regulator requests a change log for a client workspace over 12 months. | Phase 2 + fixing no-tenant-id tables |
+| **C — Activity dashboard in UI** | Staff or Angela sees "all activity on Client X this week" on the tenant detail page. | Phase 2 + Lovable frontend session |
+| **D — Security pattern detection** | Detect unusual patterns — off-hours access, bulk exports, repeated permission denials. | Phase 2 + pg_cron or scheduled query |
 
 ---
 
