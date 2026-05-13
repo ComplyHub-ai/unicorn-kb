@@ -1,10 +1,14 @@
 # Audit Log Inventory & Canonical Ledger Gap
 
-> **Last updated:** 2026-05-12 · **Reconsider by:** 2026-08-11 · **Confidence:** high — all tables verified in migrations; schema details extracted from migration files and confirmed via live DB query.
+> **Last updated:** 2026-05-13 · **Reconsider by:** 2026-08-11 · **Confidence:** high — all tables verified in migrations; schema details extracted from migration files and confirmed via live DB query.
 >
-> **Reflects commit:** `<codebase>@f913ac1c` (2026-05-12).
+> **Reflects commit:** `<codebase>@a171ca97` (2026-05-13).
 >
 > Documents the current state of audit logging across the Unicorn codebase and scopes the architectural gap between the existing domain-specific tables and a workspace-wide canonical ledger.
+>
+> **2026-05-13 update:** Design decisions confirmed — use case is compliance-grade export (Option A long-term; Option C short-term). `package_builder_audit_log.tenant_id` fix in progress this session. `v_workspace_audit_log` federated view being built over 7 confirmed tables. Phase 3 (trigger logging on `tenant_users`, `users`, `client_audit_responses`, `client_audit_findings`, `tenant_settings`) is a separate follow-up session.
+>
+> **2026-05-13 update:** `audit_user_events.tenant_id` added via migration `20260513014541`. TICKET-003 and BUG-005 are both closed — write path is no longer blocked. Table still has 0 rows; INSERT policy still absent. Add INSERT policy in Phase 3 session when trigger writes are wired.
 >
 > **2026-05-12 update:** `audit_user_events` now exists as a tracked migration (`20260511004744`). See update to Background section below. `is_vivacity_team_safe` hardened with `SET row_security = off` in the same migration — see audit `2026-05-12-recover-untracked-migrations-may11`.
 
@@ -12,7 +16,7 @@
 
 ## Background
 
-The `audit_user_events` concept originated in the original ComplyHub research and was described as the right shape for user-profile events. ~~It does not exist in the Unicorn codebase.~~ **As of migration `20260511004744` (committed to git 12 May 2026), `audit_user_events` exists as a tracked table.** It has 0 rows — the write path is intentionally absent pending integration with `enrol_as_impersonator` (TICKET-003) and the accept-invitation flow (BUG-005). Schema: `id uuid PK`, `actor_user_uuid uuid NULL`, `target_user_uuid uuid NOT NULL`, `action text NOT NULL`, `reason text NULL`, `details jsonb NULL`, `created_at timestamptz NOT NULL`. RLS enabled; two SELECT policies (own events + superadmin); no INSERT policy. No `tenant_id` — add alongside the write path before any rows accumulate.
+The `audit_user_events` concept originated in the original ComplyHub research and was described as the right shape for user-profile events. ~~It does not exist in the Unicorn codebase.~~ **As of migration `20260511004744` (committed to git 12 May 2026), `audit_user_events` exists as a tracked table.** Schema: `id uuid PK`, `actor_user_uuid uuid NULL`, `target_user_uuid uuid NOT NULL`, `action text NOT NULL`, `reason text NULL`, `details jsonb NULL`, `created_at timestamptz NOT NULL`, `tenant_id bigint NULL` (added 13 May via migration `20260513014541`). RLS enabled; two SELECT policies (own events + superadmin) plus a tenant-admin SELECT policy added 13 May. No INSERT policy — to be added in the Phase 3 trigger session. Table has 0 rows. ~~No `tenant_id` — add alongside the write path before any rows accumulate.~~ The write path was previously blocked pending TICKET-003 and BUG-005; both are now closed (13 May).
 
 What exists in addition is a proliferation of domain-specific `*_audit_log` tables — fifteen at last count — each created independently by Lovable with no shared schema contract. This document inventories those tables, characterises the schema inconsistencies, and scopes what a canonical ledger would need to cover.
 
@@ -149,28 +153,36 @@ UNION ALL
 
 ---
 
-## Decisions required before building
+## Decisions — confirmed 13 May 2026
 
-| # | Question | Who | Notes |
+| # | Question | Decision | Date |
 |---|---|---|---|
-| 1 | **What is the primary use case?** Internal ops visibility (who did what during an incident) or compliance-grade audit export (regulators, QA audits of Vivacity's own practices)? | Carl / Angela | Drives the "view is enough" vs "central table" choice. |
-| 2 | **Which entities must be covered for compliance?** At minimum: `client_audit_responses`, `client_audit_findings`, `tenant_users`. Are there others? | Angela (RTO compliance expert) | Defines scope of new trigger coverage. |
-| 3 | **Fix `package_builder_audit_log` missing `tenant_id` first?** It breaks any cross-tenant query that includes package builder events. Low-risk migration. | Carl | Prerequisite for Option B/C. |
-| 4 | **Retention policy.** How long should audit log entries be kept? 7 years is the ASQA standard for RTO records. Does this apply to Unicorn's internal audit logs, or only the compliance outputs? | Angela | Affects whether `created_at` needs a partitioning strategy. |
-| 5 | **`audit_user_events` — build now or defer?** The ComplyHub concept captures login events, password changes, role changes. Is there an immediate need for this in Unicorn? | Carl | Could be a separate table feeding into the federated view. |
+| 1 | **Primary use case?** | **Compliance-grade export** — Option A (central table) is the long-term destination; Option C federated view is the first step | 13 May 2026 |
+| 2 | **Entities for trigger coverage?** | **All four:** `tenant_users`, `users`, `client_audit_responses` + `client_audit_findings`, `tenant_settings` | 13 May 2026 |
+| 3 | **Fix `package_builder_audit_log` now?** | **Yes** — in the current session (Phase 1 before building the view) | 13 May 2026 |
+| 4 | **Retention policy** | **Open** — Angela to confirm. 7-year ASQA standard likely applies; partitioning strategy deferred until row counts warrant it | TBD |
+| 5 | **`audit_user_events` — build now?** | **Already exists** (migration `20260511004744`; `tenant_id` added 13 May). INSERT policy + trigger writes to be added in Phase 3 session | — |
 
 ---
 
-## Recommended next step
+## Current implementation status
 
-Run the **Option C short-term phase** as a Lovable prompt:
-1. Add `tenant_id bigint NOT NULL` to `package_builder_audit_log` (backfill via `packages.tenant_id` join).
-2. Create `v_workspace_audit_log` covering the 12 tables that have `tenant_id`.
-3. Create `audit_user_events` table (login, logout, password change, role change, tenant switch) with trigger on `users` UPDATE + hook into auth events if Supabase auth hooks are available.
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | Fix `package_builder_audit_log.tenant_id` | **In progress — 13 May session** |
+| Phase 2 | Create `v_workspace_audit_log` over 7 confirmed tables | **In progress — 13 May session** |
+| Phase 3 | Trigger logging on `tenant_users`, `users`, `client_audit_responses`, `client_audit_findings`, `tenant_settings` | **Separate session — not started** |
+| Long-term | Migrate to central `workspace_audit_log` table (Option A) | Deferred — pending row volume and compliance requirements |
 
-This is a low-risk first step that gives immediate cross-domain visibility without touching any existing consumers.
+---
 
-Follow the Lovable production DB change workflow (`unicorn-kb/handoffs/lovable-production-db-change.md`) — this involves a migration (`tenant_id` backfill on `package_builder_audit_log` is a data operation on a live table).
+## Recommended next step (updated 13 May)
+
+Phase 1 and Phase 2 are underway. Use the Lovable prompts drafted in the 13 May Claude Code session. The 9 TBC tables remain excluded from the view until their schemas are verified.
+
+Phase 3 (trigger-based logging): open a new Lovable DB change session once Phase 1+2 are confirmed stable. The four trigger entities were confirmed by Carl and Angela on 13 May.
+
+Follow the Lovable production DB change workflow (`unicorn-kb/handoffs/lovable-production-db-change.md`) for all remaining phases.
 
 ---
 
