@@ -1,181 +1,185 @@
 # Audit Log Inventory & Canonical Ledger Gap
 
-> **Last updated:** 2026-05-12 · **Reconsider by:** 2026-08-11 · **Confidence:** high — all tables verified in migrations; schema details extracted from migration files and confirmed via live DB query.
+> **Last updated:** 2026-05-13 · **Reconsider by:** 2026-08-13 · **Confidence:** high — all tables verified via live DB query against `yxkgdalkbrriasiyyrwk` on 13 May 2026.
 >
-> **Reflects commit:** `<codebase>@f913ac1c` (2026-05-12).
->
-> Documents the current state of audit logging across the Unicorn codebase and scopes the architectural gap between the existing domain-specific tables and a workspace-wide canonical ledger.
->
-> **2026-05-12 update:** `audit_user_events` now exists as a tracked migration (`20260511004744`). See update to Background section below. `is_vivacity_team_safe` hardened with `SET row_security = off` in the same migration — see audit `2026-05-12-recover-untracked-migrations-may11`.
+> **Reflects commit:** `<codebase>@a171ca97` (2026-05-13). Live DB queried directly; prior versions were based on migration file inspection and undercounted by ~25 tables.
 
 ---
 
 ## Background
 
-The `audit_user_events` concept originated in the original ComplyHub research and was described as the right shape for user-profile events. ~~It does not exist in the Unicorn codebase.~~ **As of migration `20260511004744` (committed to git 12 May 2026), `audit_user_events` exists as a tracked table.** It has 0 rows — the write path is intentionally absent pending integration with `enrol_as_impersonator` (TICKET-003) and the accept-invitation flow (BUG-005). Schema: `id uuid PK`, `actor_user_uuid uuid NULL`, `target_user_uuid uuid NOT NULL`, `action text NOT NULL`, `reason text NULL`, `details jsonb NULL`, `created_at timestamptz NOT NULL`. RLS enabled; two SELECT policies (own events + superadmin); no INSERT policy. No `tenant_id` — add alongside the write path before any rows accumulate.
+Unicorn has approximately **42 tables** with "audit", "log", or "events" in their name. They fall into three distinct categories — only one of which is relevant to the canonical ledger gap.
 
-What exists in addition is a proliferation of domain-specific `*_audit_log` tables — fifteen at last count — each created independently by Lovable with no shared schema contract. This document inventories those tables, characterises the schema inconsistencies, and scopes what a canonical ledger would need to cover.
+**Category 1 — RTO compliance audit module (not event logs)**
+These tables store the actual RTO audit work delivered to clients: templates, sections, questions, responses, findings, actions. They are domain data, not system event history. Examples: `audit`, `audit_section`, `audit_question`, `audit_response`, `audit_finding`, `audit_action`, `audit_templates`, `reusable_audit_templates`, `audit_intelligence_packs`. Not in scope for this document.
 
----
+**Category 2 — Domain-specific event log tables**
+Operational logs created by Lovable across different modules as features were built. No shared schema contract.
 
-## Current state — domain audit tables
+**Category 3 — Security and behaviour event tables**
+Tables explicitly tracking who did what at the security and access layer: impersonation sessions, restricted-action attempts, invitation outcomes, access denials.
 
-| Table | Created | Actor column | Change capture | Has `tenant_id` | Coverage |
-|---|---|---|---|---|---|
-| `client_audit_log` | 20260105 | `actor_user_id` | `details` jsonb | ✅ bigint | AI finding drafts + decisions; AI exec summary drafts + decisions |
-| `package_builder_audit_log` | 20260106 | `user_id` | `before_data` / `after_data` | ❌ absent | Package builder CRUD |
-| `eos_template_audit_log` | 20260120 | (TBC) | (TBC) | (TBC) | EOS template changes |
-| `eos_minutes_audit_log` | 20260120 | `user_id` | `details` jsonb | ✅ bigint | Governance meeting minutes (create, finalise, revise, lock, unlock, restore) |
-| `process_audit_log` | 20260121 | (TBC) | (TBC) | (TBC) | Process changes |
-| `assistant_audit_log` | 20260205 | `viewer_user_id` | `request_text` / `response_summary` | ✅ `client_tenant_id` bigint | Internal assistant queries, reports, refusals |
-| `knowledge_item_audit_log` | 20260205 | (TBC) | (TBC) | (TBC) | Knowledge base item changes |
-| `eos_process_audit_log` | 20260205 | (TBC) | (TBC) | (TBC) | EOS process changes |
-| `notification_audit_log` | 20260206 | (TBC) | (TBC) | (TBC) | Notification delivery events |
-| `consultant_capacity_audit_log` | 20260212 | (TBC) | (TBC) | (TBC) | Consultant capacity changes |
-| `consultant_assignment_audit_log` | 20260212 | (TBC) | (TBC) | (TBC) | Consultant assignment changes |
-| `engagement_audit_log` | 20260213 | `actor_user_uuid` | none | ✅ bigint | Package engagement events + integrity validation |
-| `exec_weekly_review_audit_log` | 20260213 | (TBC) | (TBC) | (TBC) | Executive weekly review changes |
-| `time_entry_audit_log` | 20260216 | `actor_user_id` | `old_row` / `new_row` jsonb | ✅ integer | Time entry create/update/delete/repost/split (trigger-based) |
-| `research_audit_log` | 20260216 | (TBC) | (TBC) | (TBC) | Research item changes |
-
-> Note: columns marked (TBC) were not extracted in this review — tables exist but internal schema not yet verified. The four tables with full schema detail above are representative for design purposes.
+The gap: none of the tables across Categories 2 and 3 are queryable together. There is no single surface for "what happened to Tenant X this week" or "who changed this record."
 
 ---
 
-## Schema inconsistencies
+## Complete event log inventory — live DB state (13 May 2026)
 
-Five concrete problems observed across fully-reviewed tables:
+### Active event log tables
 
-**1. Actor column has four different names**
-- `actor_user_id` — `time_entry_audit_log`, `client_audit_log`
-- `actor_user_uuid` — `engagement_audit_log`
-- `user_id` — `package_builder_audit_log`, `eos_minutes_audit_log`
-- `viewer_user_id` — `assistant_audit_log` (semantically different — the requesting user, not a mutating actor)
+| Table | Rows (approx) | `tenant_id` | Type | Actor column | Notes |
+|-------|----------|-------------|------|--------------|-------|
+| `audit_eos_events` | 2,791 | ✅ | bigint NOT NULL | `user_id` | Most active event log; EOS + invitation flow writes here |
+| `audit_dashboard_events` | 2,739 | ✅ | bigint | `actor_user_id` | Staff dashboard interactions |
+| `time_entry_audit_log` | 1,286 | ✅ | **integer** ⚠️ | `actor_user_id` | Trigger-based; old/new row capture; `action` CHECK constraint |
+| `audit_events` | 1,202 | ❌ | — | `user_id` | **Instrumentation only** — errors, message reads, SharePoint settings noise; not a compliance log |
+| `client_audit_log` | 1,125 | ✅ | bigint | `actor_user_id` | AI finding + exec summary draft decisions |
+| `audit_client_impersonation` | active | ✅ | **integer** ⚠️ | `actor_user_id` | Staff-impersonates-client sessions; has `started_at`/`ended_at` |
+| `process_audit_log` | active | ✅ | bigint **NULLABLE** ⚠️ | `actor_user_id` | Process changes; `before_data`/`after_data` jsonb; `tenant_id` nullable |
+| `tga_import_audit` | active | ✅ | bigint | `triggered_by` | TGA import runs per tenant |
+| `audit_invites` | active | ✅ | bigint | `actor_user_id` (text) | Invitation send/accept outcomes; `actor_user_id` is `text` not `uuid` ⚠️ |
+| `sharepoint_access_log` | active | ✅ | bigint | `user_id` | SharePoint file access events |
+| `document_activity_log` | active | ✅ | bigint | `actor_user_id` | Document view/download/upload with `actor_role` |
+| `portal_document_audit` | active | ✅ | bigint | `actor_user_id` | Portal document actions with `actor_role` |
+| `meeting_sync_audit` | active | ✅ | bigint | `user_id` | Outlook calendar sync results |
+| `engagement_audit_log` | active | ✅ | bigint | `actor_user_uuid` | Package engagement; uses `event_type` not `action` ⚠️ |
+| `ai_events` | active | ✅ | bigint | `actor_user_id` | AI feature performance metrics (latency, confidence, model) |
+| `eos_minutes_audit_log` | active | ✅ | bigint | `user_id` | Governance meeting minutes lifecycle |
+| `eos_template_audit_log` | active | ✅ | bigint | `user_id` | EOS template changes |
+| `consultant_assignment_audit_log` | active | ✅ | bigint | `created_by` (nullable) | Consultant assignment decisions with capacity snapshot |
+| `assistant_audit_log` | active | ✅ | bigint **as `client_tenant_id`** ⚠️ | `viewer_user_id` | AI assistant queries, refusals; column name non-standard |
+| `audit_restricted_actions` | active | ✅ | bigint | `user_id` | Attempted actions the user lacked permission for |
+| `consultant_capacity_audit_log` | active | ✅ | bigint **NULLABLE** ⚠️ | `created_by` (nullable) | Capacity calculation snapshots |
+| `audit_user_events` | **0 rows** | ✅ | bigint NULLABLE | `actor_user_uuid` | New table (May 2026); write path not yet wired |
+| `package_builder_audit_log` | active | ❌ **MISSING** | — | `user_id` | Package builder CRUD; `before_data`/`after_data` jsonb |
 
-**2. `package_builder_audit_log` has no `tenant_id`**
-This is a multi-tenancy gap: package builder audit events cannot be scoped to a tenant without joining back to the `packages` table. Any cross-domain query or view that depends on `tenant_id` cannot include this table without a join.
+### Inactive / excluded tables
 
-**3. Change-capture naming is inconsistent**
-- `old_row` / `new_row` — `time_entry_audit_log` (trigger pattern)
-- `before_data` / `after_data` — `package_builder_audit_log`
-- `details` jsonb only — `client_audit_log`, `eos_minutes_audit_log` (no before/after)
-- No change capture at all — `engagement_audit_log`
+| Table | Rows | Reason for exclusion |
+|-------|------|----------------------|
+| `audit_log` | **0** | Unicorn 1.0 legacy (field-level diffs: `field_name`, `old_value`, `new_value`, `editor_name`). Nothing writes to it in Unicorn 2.0. |
+| `audit_events` | 1,202 | Application instrumentation noise (error boundaries, profile prompts, message reads). No `tenant_id`. Not a compliance-grade source. |
+| `sch_audit_log` | low | Scheduling module; uses `org_id uuid` not `tenant_id` — incompatible join key |
+| `knowledge_item_audit_log` | low | No `tenant_id` |
+| `eos_process_audit_log` | low | No `tenant_id` |
+| `exec_weekly_review_audit_log` | low | No `tenant_id` |
+| `notification_audit_log` | low | No `tenant_id` |
+| `research_audit_log` | low | No `tenant_id` |
+| `document_link_audit` | low | No `tenant_id` |
+| `document_ai_audit` | low | No `tenant_id` |
+| `meeting_capture_audit` | low | No `tenant_id` |
+| `stage_state_audit_log` | low | No `tenant_id` |
+| `package_instance_state_log` | low | No `tenant_id` |
+| `strategic_decision_log` | low | No `tenant_id` |
 
-**4. Action vs event_type**
-- `action` — `time_entry_audit_log`, `package_builder_audit_log`, `client_audit_log`
-- `event_type` — `engagement_audit_log`
-- Some `action` columns have CHECK constraints; others are free text.
+---
 
-**5. `tenant_id` type mismatch**
-- `integer` — `time_entry_audit_log`
-- `bigint` — `engagement_audit_log`, `client_audit_log`, `eos_minutes_audit_log`
+## Schema inconsistencies (updated — live DB verified)
+
+**Actor column has six different names**
+`actor_user_id`, `actor_user_uuid`, `user_id`, `viewer_user_id`, `created_by`, `triggered_by`
+
+**`tenant_id` type inconsistencies**
+- `integer`: `time_entry_audit_log`, `audit_client_impersonation` — need `CAST(tenant_id AS bigint)` in the view
+- `bigint NULLABLE`: `process_audit_log`, `consultant_capacity_audit_log` — rows with NULL tenant_id exist
+- `client_tenant_id` (non-standard column name): `assistant_audit_log`
+
+**Action vs event_type**
+`engagement_audit_log` uses `event_type` rather than `action`
+
+**`audit_invites.actor_user_id` is `text` not `uuid`**
+Edge function writes the actor UUID as a text string. Cannot directly JOIN to `auth.users(id)` without `::uuid` cast.
+
+**`package_builder_audit_log` has no `tenant_id`**
+Cannot be included in the federated view until Phase 1 fix is applied.
 
 ---
 
 ## The gap — what a canonical ledger would add
 
-The domain tables answer the question "what changed in domain X?" They do not answer:
+Even with all 19 includable tables above, the following remain unlogged:
 
-- **"What did user Y do across the workspace this week?"** — requires querying 15 tables and normalising inconsistent schemas.
-- **"Show me all changes that touched tenant Z on date D."** — same problem; tenant_id is absent from at least one table.
-- **"Did anyone access or modify client records outside normal hours?"** — no single point of query.
-- **"Produce a change log for this audit engagement from opening to sign-off."** — would need to join `client_audit_log` + `eos_minutes_audit_log` + manual CRUD events (which have no audit trail at all).
-
-Additionally, manual CRUD on core entities has no audit coverage whatsoever:
-- Creating/updating/deleting audit responses manually → no log
-- Creating findings from scratch (not AI-drafted) → no log
-- Updating client profile data → no log
-- Tenant user role changes → no log (invitation flow is logged via `audit_invites`; post-accept changes are not)
+- Manual edits to `client_audit_responses` and `client_audit_findings` — no log anywhere
+- `tenant_users` role and access scope changes after invitation acceptance — not logged
+- `users` profile changes — `audit_user_events` table exists but write path not wired
+- `tenant_settings` configuration changes — not logged
 
 ---
 
-## Design options
+## Design decisions — confirmed 13 May 2026
 
-### Option A — Central `workspace_audit_log` table
+| # | Question | Decision |
+|---|---|---|
+| 1 | **Primary use case?** | **Compliance-grade export** — Option A (central table) is the long-term destination; Option C (federated view) is the first step |
+| 2 | **Trigger entities for medium-term?** | `tenant_users`, `users`, `client_audit_responses` + `client_audit_findings`, `tenant_settings` — all four confirmed |
+| 3 | **Fix `package_builder_audit_log` now?** | **Yes** — Phase 1 of current session |
+| 4 | **Retention policy** | Open — Angela to confirm. 7-year ASQA standard likely applies |
+| 5 | **`audit_user_events` — build now?** | Already exists with `tenant_id`. INSERT policy + trigger writes in Phase 3 |
 
-One append-only table with a common schema. All domains write to it via triggers or explicit application inserts.
+---
 
-```sql
-CREATE TABLE public.workspace_audit_log (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id    bigint NOT NULL,
-  actor_id     uuid NOT NULL REFERENCES auth.users(id),
-  action       text NOT NULL,            -- verb: 'create', 'update', 'delete', 'ai.draft', etc.
-  domain       text NOT NULL,            -- 'time_entry', 'client_audit', 'eos_minutes', etc.
-  entity_type  text NOT NULL,            -- table name or logical entity type
-  entity_id    text NOT NULL,            -- cast to text for universality
-  old_val      jsonb,
-  new_val      jsonb,
-  metadata     jsonb,                    -- domain-specific extras (tokens, model, confidence, etc.)
-  created_at   timestamptz NOT NULL DEFAULT now()
-);
+## Implementation plan — Option C (hybrid)
+
+### Phase 1 — Fix `package_builder_audit_log` (in progress, 13 May session)
+
+Add `tenant_id bigint` via migration with backfill from `packages.tenant_id`. Make NOT NULL after backfill. Prerequisite for including this table in the view.
+
+### Phase 2 — Create `v_workspace_audit_log` (in progress, 13 May session)
+
+`SECURITY INVOKER` view `UNION ALL`-ing the following 19 tables:
+
+**Straight includes** (bigint tenant_id, standard actor column):
+`audit_eos_events`, `audit_dashboard_events`, `client_audit_log`, `tga_import_audit`, `sharepoint_access_log`, `document_activity_log`, `portal_document_audit`, `meeting_sync_audit`, `ai_events`, `eos_minutes_audit_log`, `eos_template_audit_log`, `consultant_assignment_audit_log`, `audit_restricted_actions`, `audit_user_events`, `engagement_audit_log`
+
+**Requires special handling:**
+- `time_entry_audit_log` — `CAST(tenant_id AS bigint)`
+- `audit_client_impersonation` — `CAST(tenant_id AS bigint)`
+- `assistant_audit_log` — `client_tenant_id` aliased as `tenant_id`
+- `process_audit_log` — `tenant_id` nullable; include with NULL (platform-level events)
+- `consultant_capacity_audit_log` — `tenant_id` nullable; same treatment
+- `audit_invites` — `actor_user_id::uuid` cast needed
+- `package_builder_audit_log` — include only after Phase 1 is applied
+
+**Excluded from view** (no tenant_id or incompatible schema):
+See "Inactive / excluded tables" section above.
+
+Normalised output shape:
+```
+id uuid, tenant_id bigint, actor_id uuid, action text,
+domain text, entity_type text, entity_id text,
+old_val jsonb, new_val jsonb, metadata jsonb, created_at timestamptz
 ```
 
-**Pros:** single query surface, consistent schema, works as compliance export.
-**Cons:** high write volume (every CRUD on every audited table), requires retrofitting 15 existing tables, risk of becoming a bottleneck. Migration is a breaking change if any consumer depends on domain table schemas.
+### Phase 3 — Trigger-based logging (separate session)
 
-### Option B — Federated view
+Add `AFTER INSERT OR UPDATE OR DELETE` triggers writing to `audit_user_events` on:
+- `tenant_users` — role, access_scope, relationship_role changes
+- `users` — profile field changes, global_role changes
+- `client_audit_responses` — manual CRUD (currently silent)
+- `client_audit_findings` — manual CRUD (currently silent)
+- `tenant_settings` — workspace configuration changes
 
-Keep all 15 domain tables as-is. Create a `v_workspace_audit_log` view that `UNION ALL` normalises them into a common shape.
+Add INSERT policy to `audit_user_events` for the trigger function (SECURITY DEFINER).
 
-```sql
-CREATE VIEW public.v_workspace_audit_log AS
-  SELECT
-    id, tenant_id, actor_user_id AS actor_id, action, 
-    'time_entry' AS domain, 'time_entries' AS entity_type,
-    time_entry_id::text AS entity_id,
-    old_row AS old_val, new_row AS new_val, NULL AS metadata,
-    created_at
-  FROM public.time_entry_audit_log
-UNION ALL
-  SELECT
-    id, tenant_id, actor_user_id AS actor_id, action,
-    'client_audit' AS domain, entity_type, entity_id,
-    NULL AS old_val, NULL AS new_val, details AS metadata,
-    created_at
-  FROM public.client_audit_log
--- ... (12 more UNION ALL branches)
-;
-```
+### Long-term — Central `workspace_audit_log` table (Option A)
 
-**Pros:** zero migration cost on existing consumers; no write-path changes; can be added incrementally.
-**Cons:** view grows with every new domain table (maintenance cost); `package_builder_audit_log` cannot be included without a join (no `tenant_id`); the manually-unlogged operations (manual CRUD) remain invisible; query performance is poor on large datasets without materialisation.
-
-### Option C — Hybrid (recommended for this stage)
-
-1. **Short-term:** Create the federated view (Option B) for the 12 tables that have `tenant_id`. Fix `package_builder_audit_log` by adding `tenant_id` in a targeted migration. Exclude the three (TBC) tables until their schemas are verified.
-2. **Medium-term:** Add trigger-based logging on the 5 most critical manually-unlogged entities: `client_audit_responses`, `client_audit_findings`, `tenant_users`, `users`, `tenant_settings`.
-3. **Long-term decision:** If the workspace needs a compliance-grade export (e.g. for an external regulator), migrate to the central table (Option A). If the use case is internal ops visibility only, the federated view is sufficient.
+When row volumes or compliance export requirements warrant it, migrate to a single append-only table. The federated view (Phase 2) provides the same query interface and makes the migration transparent to consumers.
 
 ---
 
-## Decisions required before building
+## Current phase status
 
-| # | Question | Who | Notes |
-|---|---|---|---|
-| 1 | **What is the primary use case?** Internal ops visibility (who did what during an incident) or compliance-grade audit export (regulators, QA audits of Vivacity's own practices)? | Carl / Angela | Drives the "view is enough" vs "central table" choice. |
-| 2 | **Which entities must be covered for compliance?** At minimum: `client_audit_responses`, `client_audit_findings`, `tenant_users`. Are there others? | Angela (RTO compliance expert) | Defines scope of new trigger coverage. |
-| 3 | **Fix `package_builder_audit_log` missing `tenant_id` first?** It breaks any cross-tenant query that includes package builder events. Low-risk migration. | Carl | Prerequisite for Option B/C. |
-| 4 | **Retention policy.** How long should audit log entries be kept? 7 years is the ASQA standard for RTO records. Does this apply to Unicorn's internal audit logs, or only the compliance outputs? | Angela | Affects whether `created_at` needs a partitioning strategy. |
-| 5 | **`audit_user_events` — build now or defer?** The ComplyHub concept captures login events, password changes, role changes. Is there an immediate need for this in Unicorn? | Carl | Could be a separate table feeding into the federated view. |
-
----
-
-## Recommended next step
-
-Run the **Option C short-term phase** as a Lovable prompt:
-1. Add `tenant_id bigint NOT NULL` to `package_builder_audit_log` (backfill via `packages.tenant_id` join).
-2. Create `v_workspace_audit_log` covering the 12 tables that have `tenant_id`.
-3. Create `audit_user_events` table (login, logout, password change, role change, tenant switch) with trigger on `users` UPDATE + hook into auth events if Supabase auth hooks are available.
-
-This is a low-risk first step that gives immediate cross-domain visibility without touching any existing consumers.
-
-Follow the Lovable production DB change workflow (`unicorn-kb/handoffs/lovable-production-db-change.md`) — this involves a migration (`tenant_id` backfill on `package_builder_audit_log` is a data operation on a live table).
+| Phase | Status |
+|-------|--------|
+| Phase 1 — `package_builder_audit_log.tenant_id` | **In progress — 13 May session** |
+| Phase 2 — `v_workspace_audit_log` | **In progress — 13 May session** |
+| Phase 3 — Trigger logging (4 entities) | Queued — separate session |
+| Long-term — Option A central table | Deferred |
 
 ---
 
 ## Related
 
-- `unicorn-kb/reference/ai-audit-stack.md` — AI-specific audit (client_audit_log deep dive)
+- `unicorn-kb/reference/ai-audit-stack.md` — AI-specific audit (`client_audit_log` deep dive)
 - `unicorn-kb/reference/decision-trail.md` — ADR-005 (RLS), ADR-011 (operating model)
-- `unicorn-kb/pinned/decisions.md` — open decisions list (add ADR-013 when design is decided)
+- `unicorn-kb/handoffs/lovable-production-db-change.md` — workflow for Phases 1–3
