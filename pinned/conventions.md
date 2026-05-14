@@ -324,6 +324,26 @@ Whether to apply this pattern to tasks/emails/documents in 2.0 is an open questi
 - There is no pre-merge migration review gate today (see `reference/decision-trail.md → ADR-011`). Lovable-generated migrations land direct on `main`; hand-written migrations should be self-reviewed against the New table checklist below.
 - If the migration adds a table with mixed staff+client access, the three-step RLS ritual MUST be in the same migration.
 
+### Schema introspection — FK blind spot in `information_schema`
+
+When verifying or auditing a foreign key constraint, **use `pg_constraint`, not `information_schema.constraint_column_usage`**.
+
+`information_schema.constraint_column_usage` silently omits FKs that target a column of a different integer width (e.g. `int4 → int8`). The FK exists and works correctly in production, but the view returns zero rows. This wastes a round of investigation and can lead a careless audit to recommend "restoring a missing FK" that is already there.
+
+Authoritative query:
+
+```sql
+SELECT c.conname,
+       c.contype,
+       pg_get_constraintdef(c.oid) AS definition
+FROM pg_constraint c
+JOIN pg_class t ON t.oid = c.conrelid
+JOIN pg_namespace n ON n.oid = t.relnamespace
+WHERE n.nspname = 'public' AND t.relname = '<table>';
+```
+
+First encountered: `eos_rocks.client_id → tenants.id` (int4 → int8) on 2026-05-14. See `unicorn-audit/audit/2026-05-14-eos-rocks-client-tenant-id-rename.md → Findings`.
+
 ### Function hardening
 
 Every new or replaced `public` schema function **must** include all three of these, in this order, immediately after `LANGUAGE` / volatility / `SECURITY DEFINER`:
