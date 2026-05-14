@@ -6,7 +6,7 @@
 |-------|-----|------|-------|
 | `unicorn-kb` | `ComplyHub-ai` | `unicorn-kb` | Team KB — this repo |
 | `<codebase>` | `vivacityrto` | `unicorn-cms-f09c59e5` | Codebase — Lovable territory |
-| `unicorn-audit` | _(local only)_ | _(not on GitHub)_ | Carl's audit trail |
+| `unicorn-audit` | `ComplyHub-ai` | `unicorn-audit` | Carl's audit trail (public, read-only for non-Carl) |
 
 Use these org/repo values for all GitHub MCP calls. No need to ask the user for them.
 
