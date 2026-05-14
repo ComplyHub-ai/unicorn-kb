@@ -1,10 +1,10 @@
 # Audit Log Inventory & Canonical Ledger Gap
 
-> **Last updated:** 2026-05-13 · **Reconsider by:** 2026-08-13 · **Confidence:** high — all tables verified via live DB query against `yxkgdalkbrriasiyyrwk` on 13 May 2026.
+> **Last updated:** 2026-05-14 · **Reconsider by:** 2026-08-14 · **Confidence:** high — all tables verified via live DB query against `yxkgdalkbrriasiyyrwk` on 13–14 May 2026. Phases 1, 2, and 3 complete.
 >
 > **Reflects commit:** `<codebase>@a171ca97` (2026-05-13). Live DB queried directly; prior versions were based on migration file inspection and undercounted by ~25 tables.
 >
-> **Priority:** P1 (downgraded from P0 on 13 May 2026). Original P0 classification was based on a mistaken assumption that `audit_log` was the canonical ledger with broken writes. `audit_log` has 0 rows and is a dead Unicorn 1.0 legacy table. The real gap is the absence of a federated view — an ops capability gap, not a live breakage.
+> **Priority:** P1 (downgraded from P0 on 13 May 2026). Original P0 classification was based on a mistaken assumption that `audit_log` was the canonical ledger with broken writes. `audit_log` has 0 rows and is a dead Unicorn 1.0 legacy table. The real gap was the absence of a federated view and trigger-based logging — both now shipped.
 
 ---
 
@@ -63,7 +63,8 @@ The gap: none of the tables across Categories 2 and 3 are queryable together. Th
 | `assistant_audit_log` | active | ✅ | bigint **as `client_tenant_id`** ⚠️ | `viewer_user_id` | AI assistant queries, refusals; column name non-standard |
 | `audit_restricted_actions` | active | ✅ | bigint | `user_id` | Attempted actions the user lacked permission for |
 | `consultant_capacity_audit_log` | active | ✅ | bigint **NULLABLE** ⚠️ | `created_by` (nullable) | Capacity calculation snapshots |
-| `audit_user_events` | **0 rows** | ✅ | bigint NULLABLE | `actor_user_uuid` | New table (May 2026); write path not yet wired |
+| `audit_user_events` | active | ✅ | bigint NULLABLE | `actor_user_uuid` | Write path wired — triggers on `tenant_users` (user_joined) and `users` (profile_created/updated/deleted) shipped 14 May 2026 |
+| `addin_audit_log` | active | ✅ | bigint NULLABLE | `user_uuid` | M365 add-in surface; created 14 May 2026; federated as 21st branch of `v_workspace_audit_log` |
 | `package_builder_audit_log` | active | ❌ **MISSING** | — | `user_id` | Package builder CRUD; `before_data`/`after_data` jsonb |
 
 ### Inactive / excluded tables
@@ -110,12 +111,12 @@ Cannot be included in the federated view until Phase 1 fix is applied.
 
 ## The gap — what a canonical ledger would add
 
-Even with all 19 includable tables above, the following remain unlogged:
+Phase 3 (14 May 2026) closed the main gaps. Remaining unlogged:
 
-- Manual edits to `client_audit_responses` and `client_audit_findings` — no log anywhere
-- `tenant_users` role and access scope changes after invitation acceptance — not logged
-- `users` profile changes — `audit_user_events` table exists but write path not wired
-- `tenant_settings` configuration changes — not logged
+- `tenant_users` DELETE — `user_left` event not logged (INSERT/join only)
+- `tenant_engagement_settings` UPDATE fired but table currently has 0 rows — will populate as features are used
+- `package_builder_audit_log` — `tenant_id` column added but no write path yet; excluded from view until tenant-scoped writes exist
+- `tenant_settings` (other configuration tables) — still not logged; separate session if needed
 
 ---
 
@@ -133,13 +134,15 @@ Even with all 19 includable tables above, the following remain unlogged:
 
 ## Implementation plan — Option C (hybrid)
 
-### Phase 1 — Fix `package_builder_audit_log` (in progress, 13 May session)
+### Phase 1 — Fix `package_builder_audit_log` ✅ complete (14 May 2026)
 
-Add `tenant_id bigint` via migration with backfill from `packages.tenant_id`. Make NOT NULL after backfill. Prerequisite for including this table in the view.
+`tenant_id bigint NULLABLE` added. Backfill was not possible — `packages` is a global catalog table with no `tenant_id`; existing rows are SuperAdmin global edits with no tenant context. Table excluded from view until tenant-scoped writes exist.
 
-### Phase 2 — Create `v_workspace_audit_log` (in progress, 13 May session)
+### Phase 2 — Create `v_workspace_audit_log` ✅ complete (14 May 2026)
 
-`SECURITY INVOKER` view `UNION ALL`-ing the following 19 tables:
+`SECURITY INVOKER` view, `service_role` only. Initially 20-branch UNION ALL; extended to 21 branches on the same day when `addin_audit_log` was created. See audit entries `audit-2026-05-14-v-workspace-audit-log` and `audit-2026-05-14-addin-audit-log`.
+
+`UNION ALL`-ing the following 20 tables (plus `addin_audit_log` as 21st):
 
 **Straight includes** (bigint tenant_id, standard actor column):
 `audit_eos_events`, `audit_dashboard_events`, `client_audit_log`, `tga_import_audit`, `sharepoint_access_log`, `document_activity_log`, `portal_document_audit`, `meeting_sync_audit`, `ai_events`, `eos_minutes_audit_log`, `eos_template_audit_log`, `consultant_assignment_audit_log`, `audit_restricted_actions`, `audit_user_events`, `engagement_audit_log`
@@ -163,16 +166,19 @@ domain text, entity_type text, entity_id text,
 old_val jsonb, new_val jsonb, metadata jsonb, created_at timestamptz
 ```
 
-### Phase 3 — Trigger-based logging (separate session)
+### Phase 3 — Trigger-based logging ✅ complete (14 May 2026)
 
-Add `AFTER INSERT OR UPDATE OR DELETE` triggers writing to `audit_user_events` on:
-- `tenant_users` — role, access_scope, relationship_role changes
-- `users` — profile field changes, global_role changes
-- `client_audit_responses` — manual CRUD (currently silent)
-- `client_audit_findings` — manual CRUD (currently silent)
-- `tenant_settings` — workspace configuration changes
+Five SECURITY DEFINER trigger functions shipped. All verified — trigger enabled, `search_path=''`, smoke test count=1. See audit entry `audit-2026-05-14-phase3-trigger-logging`.
 
-Add INSERT policy to `audit_user_events` for the trigger function (SECURITY DEFINER).
+| Entity | Target | Actions |
+|---|---|---|
+| `tenant_users` | `audit_user_events` | `user_joined` (INSERT only) |
+| `users` | `audit_user_events` | `profile_created`, `profile_updated`, `profile_deleted` |
+| `client_audit_responses` | `client_audit_log` | `create`, `update`, `delete` |
+| `client_audit_findings` | `client_audit_log` | `create`, `update`, `delete` |
+| `tenant_engagement_settings` | `audit_events` | `settings_created`, `settings_updated` |
+
+Note: `tenant_settings` (original plan item) was replaced by `tenant_engagement_settings` — this is the concrete settings table that exists in the DB. `audit_events` has no `tenant_id` column; `tenant_id` is stored in the `details` jsonb for that table.
 
 ### Long-term — Central `workspace_audit_log` table (Option A)
 
@@ -184,9 +190,9 @@ When row volumes or compliance export requirements warrant it, migrate to a sing
 
 | Phase | Status |
 |-------|--------|
-| Phase 1 — `package_builder_audit_log.tenant_id` | **In progress — 13 May session** |
-| Phase 2 — `v_workspace_audit_log` | **In progress — 13 May session** |
-| Phase 3 — Trigger logging (4 entities) | Queued — separate session |
+| Phase 1 — `package_builder_audit_log.tenant_id` | ✅ **Complete** — 14 May 2026 |
+| Phase 2 — `v_workspace_audit_log` (21 branches) | ✅ **Complete** — 14 May 2026 |
+| Phase 3 — Trigger logging (5 entities) | ✅ **Complete** — 14 May 2026 |
 | Long-term — Option A central table | Deferred |
 
 ---
