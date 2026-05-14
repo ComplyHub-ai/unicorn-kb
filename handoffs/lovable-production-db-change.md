@@ -38,6 +38,9 @@ The audit must cover:
 - Side-effect triggers on cascaded tables
 - Rollback plan for every step
 - Any design decisions required before coding (surface these explicitly)
+- **For column renames or signature changes — call-site grep must use the right heuristic.** "`<table>` and `<column>` in the same file" misses code that destructures `row.column` from a typed object without naming the table nearby, and misses local interface declarations that shadow the DB row type. Pair the column-type signature (e.g. `client_tenant_id?: number | null`) with file-level proximity to the table OR a hook/component name implying it. A literal-string-search alone is not sufficient.
+
+When verifying an FK during the audit, use `pg_constraint`, not `information_schema.constraint_column_usage` — the latter omits FKs across implicit int-width casts (see `pinned/conventions.md → Schema introspection`).
 
 **If the session creates or replaces any function**, include this requirement in the audit prompt:
 
@@ -135,10 +138,11 @@ Use pg_cron for scheduling. Always set the job to self-unschedule after one run.
 ## After deploy
 
 1. Run verification queries the morning after off-peak steps
-2. Confirm affected users can log in / feature works end-to-end
-3. Write the audit entry — the dev who ran the session authors it; Carl reviews via PR. Follow the template in `unicorn-audit/README.md`; push to a branch named `audit/YYYY-MM-DD-<slug>`; do not auto-merge.
-4. Update `unicorn-audit/INDEX.md`
-5. Update any stale KB docs in `unicorn-kb/codebase-state/` if the migration changed documented architecture
+2. **Final repo-wide grep against `origin/main`, not the working tree.** The build catches consumers that read the renamed column; it does NOT catch local interface declarations or unused fields. After Lovable reports "build successful", run `git grep "<old name>" origin/main -- 'src/**/*.ts' 'src/**/*.tsx'` and audit every hit before declaring done. Working-tree greps lie when the local copy is behind `origin/main` (always the case mid-session).
+3. Confirm affected users can log in / feature works end-to-end
+4. Write the audit entry — the dev who ran the session authors it; Carl reviews via PR. Follow the template in `unicorn-audit/README.md`; push to a branch named `audit/YYYY-MM-DD-<slug>`; do not auto-merge.
+5. Update `unicorn-audit/INDEX.md`
+6. Update any stale KB docs in `unicorn-kb/codebase-state/` if the migration changed documented architecture
 
 ---
 
