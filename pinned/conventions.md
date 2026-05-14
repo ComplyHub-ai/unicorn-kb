@@ -81,6 +81,49 @@ ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;
 - **Vivacity-only tables** (e.g., internal staff tools) — only need `is_vivacity()` ALL.
 - **Cross-tenant system tables** (e.g., `tenants` itself) — special-case policies; flag in `reference/brainstorm-log.md` and tag Carl.
 
+### Tables that should be locked down (deny-all + COMMENT)
+
+For tables that **must not be reachable from client-facing roles** (anon, authenticated) but cannot be moved out of an API-exposed schema, use the explicit deny-all pattern. Three precedents shipped 14 May 2026:
+
+| Table | Why locked | Where |
+|---|---|---|
+| `public.tenant_rto_scope_staging` | Active staging buffer for `tga-rto-sync` edge function; service-role writes; no client read path | `public` (schema USAGE granted to authenticated → per-table policy IS the gate) |
+| `unicorn1."U1_XeroURL"` | Frozen legacy backfill source (consumed Feb 2026); no application read path | `unicorn1` (schema USAGE denied for all client roles → defense-in-depth) |
+| `public._tenant_users_contact_backfill_20260512` | Temporary rollback snapshot from a backfill workstream; 30-day burn-in then drop | `public` |
+
+**Canonical shape** — three statements per table:
+
+```sql
+COMMENT ON TABLE <schema>.<table> IS
+  '<one-paragraph description of the table''s role and, if temporary,
+   the explicit drop date in the form: DROP AFTER YYYY-MM-DD>';
+
+ALTER TABLE <schema>.<table> ENABLE ROW LEVEL SECURITY;
+-- (skip if already enabled)
+
+CREATE POLICY "deny_authenticated"
+  ON <schema>.<table>
+  FOR ALL TO authenticated
+  USING (false) WITH CHECK (false);
+
+CREATE POLICY "deny_anon"
+  ON <schema>.<table>
+  FOR ALL TO anon
+  USING (false) WITH CHECK (false);
+```
+
+**Service-role still works.** `service_role` has `BYPASSRLS` per [Supabase's documented role design](https://supabase.com/docs/guides/api/rest-row-level-security) — edge functions and admin SQL access continue to read/write.
+
+**When to use this vs the standard tenant + super_admin pattern:**
+
+- Use deny-all when the table has no client-side read or write path at all — staging buffers consumed by edge functions, forensic snapshots, temp backfill safety nets.
+- Use the standard pattern (`has_tenant_access` + `is_super_admin`) when any authenticated user should be able to read or write under normal conditions.
+- Use Vivacity-only (`is_vivacity()` ALL) when Vivacity team needs operational read access but tenants do not.
+
+**Bake the drop date into the COMMENT for temporary tables.** Calendar reminders rot; SQL doesn't. The COMMENT is the canonical place for "DROP AFTER YYYY-MM-DD" so whoever is in the DB at the drop date sees it without needing to consult any external system.
+
+**When NOT to archive instead:** moving a locked-down table to the `archive` schema is the right call when the table is *finished and immutable* (e.g., `archive.audit_log` shipped 14 May). Don't move tables that are still actively written to (`tenant_rto_scope_staging`) or are mid-lifecycle (`_tenant_users_contact_backfill_*` during burn-in). Also remember that `archive` has schema USAGE granted to `authenticated`, so it does NOT improve defense-in-depth for tables that started in a USAGE-denied schema like `unicorn1`.
+
 ### Public helper functions
 Always available in RLS policies:
 - `is_vivacity()` — current user is in tenant 6372
