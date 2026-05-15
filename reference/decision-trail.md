@@ -1,6 +1,6 @@
 # Decision Trail (ADRs)
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2027-04-27 · **Confidence:** medium — ADR-003 tenant ID corrected to 6372 (April 2026 audit). ADRs 001–004 and 006–010 are reconstructed from code and sibling-project docs; ADR-005 and ADR-008 are verbatim from sibling-project incidents and may or may not have occurred identically here. ADR-011 added 2026-04-27 to document the current operating model (no peer review; Lovable owns schema in practice). RJ should review legacy ADRs before treating as canonical; ADR-011 is canonical for current state.
+> **Last updated:** 2026-05-15 · **Reconsider by:** 2027-05-15 · **Confidence:** medium — ADR-003 tenant ID corrected to 6372 (April 2026 audit). ADRs 001–004 and 006–010 are reconstructed from code and sibling-project docs; ADR-005 and ADR-008 are verbatim from sibling-project incidents and may or may not have occurred identically here. ADR-011 added 2026-04-27 to document the current operating model (no peer review; Lovable owns schema in practice). ADR-013 added 2026-05-15 to record the flagship-surfaces reframing (CSC workflow + Client Portal + Vivacity Academy; EOS reclassified as internal operating system; amends ADR-006). RJ should review legacy ADRs before treating as canonical; ADR-011 and ADR-013 are canonical for current state.
 >
 > Architecture Decision Records for Unicorn 2.0.
 > Purpose: preserve the *why* behind each decision so it isn't re-litigated, create a defensible paper trail, and give future devs (and Claude) context for judgment calls.
@@ -283,6 +283,59 @@ In practice, as of April 2026: Angela and Dave develop predominantly through Lov
 - `handoffs/lovable-production-db-change.md` (the workflow that triggers dev-authored entries)
 - `pinned/team-roles.md → Tool access matrix` and `→ Authority`
 - `pinned/kb-hygiene.md → Three-repo architecture` and `→ Who owns what`
+
+---
+
+### ADR-013: Flagship surfaces — CSC workflow + Client Portal + Vivacity Academy; EOS reclassified {#adr-013}
+**Date:** 2026-05-15
+**Status:** Decided — describes current product framing
+**Decided by:** Carl Simpao (project lead + KB owner), in conversation with the user surfacing the framing shift
+
+**Context:** The KB has positioned EOS Level 10 as "the flagship" since ADR-006 (2025) and the original orientation.md framing. That call was correct when EOS was the most distinctive new module and the product was smaller. As of `<codebase>@d240b112` (2026-05-15), the staff sidebar carries seven sections (`WORK`, `CLIENTS`, `EOS`, `RESOURCE MANAGEMENT`, `ADMINISTRATION`, `ACADEMY BUILDER`, `SYSTEM CONFIG`), the `CLIENTS` section alone has eight items spanning the full CSC workflow, the `/client/*` portal has ~14+ surfaces, and Vivacity Academy ships role-specific learner views plus a Professional Development Plan module (May 2026).
+
+The disconnect surfaced when the user pointed at the `CLIENTS` section ("Manage Clients" with 407 tenants, CSC load distribution, risk levels) and "Manage Documents" (575 docs) and said *this* is the flagship — together with the Client Portal and Vivacity Academy. EOS is what Vivacity uses to run *itself*; it is not on the path between Vivacity and its clients.
+
+**Decision:** Reframe the product narrative as follows.
+
+- **Three flagship surfaces** (consultant- or client-facing, saleable, on the renewal path):
+  1. **CSC workflow** — staff `CLIENTS` section. The Client Success Consultant's daily workspace.
+  2. **Client Portal** — the `/client/*` surfaces. What client RTOs see and do.
+  3. **Vivacity Academy** — the learning offering to client RTO staff (courses + PDP + Academy Builder).
+- **One internal operating system**: **EOS Level 10**, in the staff `EOS` section. Vivacity runs itself on EOS; client-tagged outputs reach clients via consultant-mediated surfaces, not direct EOS access. EOS remains load-bearing and fully shipped — it is simply not a flagship in the "what we sell" sense.
+
+This reframing is documentation-only. No code changes. ADR-006 (EOS Level 10 as a first-class product surface) is **amended, not superseded**: EOS retains its first-class implementation, ownership, and engineering investment — what changes is its narrative position relative to the three client-facing flagships.
+
+**Reasoning:**
+- **Honesty over inertia.** Saying "EOS is the flagship" today undersells the consultant + client + academy surfaces and misroutes prioritisation conversations. New readers form expectations that don't match where Vivacity actually invests review and rollout discipline.
+- **Prioritisation clarity.** When trading off scope, flagship-vs-internal is the right axis. CSC workflow regressions affect every active engagement; EOS regressions affect Vivacity's own meeting cadence. Both matter, but the impact paths differ — and the KB should make that visible.
+- **Onboarding alignment.** The first thing a non-technical reader (new hire, external reviewer) needs to know about Unicorn is what it does for clients. CSC workflow / Client Portal / Academy answers that; "EOS Level 10 is the flagship" does not, unless you already know the company runs itself on EOS.
+- **Reflects the navigation.** Seven sidebar sections with `CLIENTS` second only to `WORK` (the consultant's personal inbox) is the product team's revealed preference. The KB framing should match the UI surface area.
+
+**Alternatives considered:**
+- **Keep "EOS is the flagship."** Rejected — undersells what the product actually does for paying clients. Persisting the old framing makes the KB silently wrong over time, the same failure mode ADR-011 was written to avoid.
+- **Add a fourth flagship line for EOS.** Rejected — flattens the distinction. EOS does not have the same client-facing impact path as the other three, and treating it as parallel hides the real signal.
+- **Drop "flagship" terminology entirely.** Rejected — the team uses the word, and the alternative ("priority module") is vaguer. Keep the term; sharpen what it means.
+- **Wait for a full architecture rewrite.** Rejected — the framing is wrong *today*, and the cost of a small surgical reframe is much lower than letting the wrong frame compound in onboarding and decisions.
+
+**Risks accepted:**
+- **EOS investment may look deprioritised.** Mitigation: explicit "internal operating system" framing carries weight — Vivacity's own cadence depends on it, and ADR-006's first-class implementation commitments stand. The summary matrix line in `module-status.md` calls this out directly.
+- **Three flagships is one more thing to remember than one flagship.** Mitigation: the surfaces are already three distinct nav areas in the UI (CLIENTS, /client/*, Academy); the framing maps to what readers will see in the running app.
+- **"Flagship" is value-laden.** Some readers may infer that non-flagship modules are second-class. Mitigation: §15 (Integrations), §17 (Resource Hub) etc. continue to carry status indicators independent of flagship framing.
+
+**Consequences:**
+- `pinned/orientation.md` — "What is novel about 2.0" replaced with the three-flagship framing; "What's live" reordered to lead with flagship surfaces, then internal operating system, then supporting modules + integrations.
+- `pinned/glossary.md` — added **CSC**, **CSC workflow**, **Flagship surface**, **Internal operating system**.
+- `codebase-state/architecture.md` — new "Product overview — flagship surfaces" section at top, including the seven-section sidebar map.
+- `codebase-state/module-status.md` — new "Flagship surfaces" section at top; §3 (EOS) reclassified from "the flagship feature" to "Vivacity's internal operating system"; §6 (Client Portal) and §16 (Academy) labelled as Flagships #2 and #3 respectively.
+- **ADR-006 amended, not superseded.** EOS Level 10 remains a first-class product surface implementation-wise. What changes is its narrative position relative to the client-facing flagships.
+- **For prioritisation:** when planning trades scope between EOS and CSC workflow / Client Portal / Academy work, the default should be to protect the flagships unless EOS work has a specific identified client-impact path.
+
+**Linked to:**
+- ADR-006 (EOS Level 10 as a first-class product surface; amended)
+- `pinned/orientation.md → Flagship surfaces`
+- `codebase-state/architecture.md → Product overview — flagship surfaces`
+- `codebase-state/module-status.md → Flagship surfaces`
+- `pinned/glossary.md` (CSC, CSC workflow, Flagship surface, Internal operating system)
 
 ---
 

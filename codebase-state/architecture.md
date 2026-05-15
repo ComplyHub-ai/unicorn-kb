@@ -1,11 +1,75 @@
 # Architecture
 
-> **Last updated:** 2026-04-30 · **Reconsider by:** 2026-07-30 · **Confidence:** medium-high — tenant ID, EOS table names, pg_cron, and LLM provider verified in codebase (April 2026 audit). Two-table membership model documented 2026-04-28; tenant ID corrected from 319 → 6372; stale cross-references updated.
+> **Last updated:** 2026-05-15 · **Reconsider by:** 2026-08-15 · **Confidence:** medium — flagship-surfaces product overview added 2026-05-15 sourced from `origin/main@d240b112` `DashboardLayout.tsx`. Edge function counts, tables, and supabase project ID still reflect the 2026-04-30 audit; SHA bumped to acknowledge nav sourced from origin, but full reconciliation against origin/main is deferred until the next material feature ship.
 >
-> **Reflects commit:** `<codebase>@9cdc2a85` (2026-04-30). 7 new AI audit edge functions shipped 29–30 April 2026 (`embed-srto-corpus`, `retrieve-srto-context`, `draft-finding`, `record-finding-decision`, `analyse-evidence`, `draft-executive-summary`, `record-executive-summary-decision`); edge function count updated from 117 → 124. `srto_corpus` (pgvector), `client_audit_response_documents`, `ai_evidence_analysis_usage` tables added. See `reference/ai-audit-stack.md` for the full reference.
+> **Reflects commit:** `<codebase>@9cdc2a85` (2026-04-30) for edge function inventory, tables, and integration stack. Sidebar nav snapshot sourced from `<codebase>@d240b112` (origin/main, 2026-05-15). 7 new AI audit edge functions shipped 29–30 April 2026 (`embed-srto-corpus`, `retrieve-srto-context`, `draft-finding`, `record-finding-decision`, `analyse-evidence`, `draft-executive-summary`, `record-executive-summary-decision`); edge function count updated from 117 → 124. `srto_corpus` (pgvector), `client_audit_response_documents`, `ai_evidence_analysis_usage` tables added. See `reference/ai-audit-stack.md` for the full reference.
 >
 > System design reference for Unicorn 2.0. How everything connects, where logic lives, and the constraints to respect.
 > Reconciled against the `unicorn-cms-f09c59e5` working tree — April 2026. Note: a separate Vivacity Supabase project previously shared the "Unicorn 2.0" name but had different edge functions and module scope. That sibling project is now largely superseded — this doc describes the current codebase.
+
+---
+
+## Product overview — flagship surfaces
+
+Unicorn 2.0 has three flagship product surfaces (consultant- or client-facing, saleable) and one internal operating system (load-bearing for Vivacity itself, but not sold). The KB framing reset on 2026-05-15 — see [reference/decision-trail.md#adr-013](../reference/decision-trail.md#adr-013).
+
+### Flagship #1 — CSC workflow (staff `CLIENTS` section)
+
+Where Client Success Consultants run their portfolio. The staff sidebar's `CLIENTS` section ([DashboardLayout.tsx:38-48](../src/components/DashboardLayout.tsx#L38-L48)):
+
+| Item | Path | Purpose |
+|---|---|---|
+| Clients | `/manage-tenants` | Client list — CSC load, packages, status, risk, anniversary; ~407 tenants in production |
+| Packages | `/manage-packages` | Package catalogue (KS-GTO, M-RR, M-AM, M-DR, etc.) and assignment |
+| Documents | `/manage-documents` | System document library (~575 docs, ~21 categories, ~78 phases) |
+| Communications | `/communications` | Outbound/inbound client communications hub |
+| Support Tickets | `/support-tickets` | Per-client ticketing |
+| RTO Tips | `/rto-tips` | Quick-reference compliance content |
+| Compliance Auditor | `/compliance-audits` | AI-assisted compliance auditor |
+| Audits | `/audits` | Full audit engagement workspace (CHC, Mock, CRICOS, Due Diligence) |
+
+### Flagship #2 — Client Portal (`/client/*`)
+
+What client RTOs see ([DashboardLayout.tsx:125-143](../src/components/DashboardLayout.tsx#L125-L143)). RLS-gated to the client's own tenant.
+
+| Item | Path | Audience |
+|---|---|---|
+| Home | `/client/home` | All client users |
+| Documents | `/client/documents` | All client users |
+| Resource Hub | `/client/resource-hub` | All client users |
+| Calendar | `/client/calendar` | All client users |
+| Notifications | `/client/notifications` | All client users |
+| Reports | `/client/reports` | All client users |
+| Manage Team | `/team-settings` | Tenant admin only |
+
+Plus the Academy learner surface (next).
+
+### Flagship #3 — Vivacity Academy
+
+Learning platform for client RTO staff. Two surfaces:
+
+- **Learner surface** — role-specific dashboards (Trainer, Compliance Manager, Governance Person, Student Support Officer, Administration Assistant), `/academy/courses`, `/academy/pdp` (Professional Development Plan), `/academy/certificates`, `/academy/events`, `/academy/community`, lesson viewer, assessment player, results.
+- **Academy Builder** — Vivacity Super Admin only. `/superadmin/academy/builder`, `/superadmin/academy/enrollments`, `/superadmin/academy/certificates`, `/superadmin/academy/tenant-access`, `/superadmin/academy/package-course-rules`.
+
+**PDP** anchors development goals to SRTO 2025 Standards; captures evidence (12 types), in-lesson reflections, and manager mid/end-cycle reviews; powers a workforce dashboard for tenant admins (`/client/staff-pdps`) and Vivacity (`/superadmin/workforce-pdp`).
+
+### Internal operating system — EOS Level 10 (staff `EOS` section)
+
+Vivacity's own operating system — not sold to clients, not part of the Client Portal. The `EOS` section ([DashboardLayout.tsx:50-69](../src/components/DashboardLayout.tsx#L50-L69)) includes EOS Overview, Leadership Dashboard, Scorecard, Mission Control (V/TO), Rocks, Flight Plan, Risks & Opportunities, To-Dos, Meetings, Quarterly Conversations, Accountability Chart, GWC Trends, Rock Analysis, Client Impact, Processes. Visibility is role-aware (Leadership-only items hidden from Team Members). Client-tagged EOS items roll up into CSC workflow contexts ("Client Impact"), giving consultants a unified view of work-for-clients without exposing EOS to client tenants.
+
+### Staff sidebar — full section map
+
+For reference, the seven top-level sections in the Vivacity staff sidebar and who sees them ([DashboardLayout.tsx](../src/components/DashboardLayout.tsx)):
+
+| # | Section | Items | Visible to |
+|---|---|---|---|
+| 1 | WORK | Dashboard, Executive Dashboard, Inbox, My Work, Tasks, Time Inbox, My Calendar, Meetings, Event Calendar | All Vivacity Team |
+| 2 | CLIENTS | Clients, Packages, Documents, Communications, Support Tickets, RTO Tips, Compliance Auditor, Audits | All Vivacity Team |
+| 3 | EOS | 15 items (Overview → Processes) | All Vivacity Team; Leadership-only items hidden from Team Members |
+| 4 | RESOURCE MANAGEMENT | Content Dashboard + 8 library managers | Super Admin + Team Leader |
+| 5 | ADMINISTRATION | Team Users, Tenant Users, Manage Invites, User Audit, Audit Logs, Email Templates | Super Admin full; Team Leader read-only on user tables |
+| 6 | ACADEMY BUILDER | Tenant Access, Enrolments, Certificates, Academy Builder, Package → Course Rules | Super Admin only |
+| 7 | SYSTEM CONFIG | 14 items (Manage Packages, Manage Stages, Stage Builder, Stage Analytics, EOS Processes, Knowledge Library, AI Assistant, Add-in Settings, ClickUp Mapping, Code Tables, Lifecycle Checklists, Merge Field Tags, Governance Documents, SharePoint Sites) | Super Admin only |
 
 ---
 

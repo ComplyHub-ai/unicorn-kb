@@ -1,6 +1,6 @@
 # Start Here — Unicorn 2.0
 
-> **Last updated:** 2026-04-28 · **Reconsider by:** 2026-10-27 · **Confidence:** medium-high — tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure; ground rules updated 2026-04-27 to reflect operating-model ADR-011; non-technical reader sections added 2026-04-27; audit authorship updated 2026-04-28 per ADR-012.
+> **Last updated:** 2026-05-15 · **Reconsider by:** 2026-11-15 · **Confidence:** medium-high — flagship reframing 2026-05-15 (ADR-013) shifts the headline from "EOS is the flagship" to "CSC workflow + Client Portal + Vivacity Academy is the flagship," with EOS reclassified as Vivacity's internal operating system. Tenant ID verified in codebase; team-roles section rewritten 2026-04-27 in seat-centric restructure; ground rules updated 2026-04-27 to reflect operating-model ADR-011; non-technical reader sections added 2026-04-27; audit authorship updated 2026-04-28 per ADR-012.
 >
 > Shared orientation for the Unicorn 2.0 engineering team. Product overview, mental model, ground rules, and key landmarks. Read this before diving into any other KB file.
 
@@ -22,7 +22,15 @@
 - OnceHub (booking — partially superseded, see [migration-1to2.md](../reference/migration-1to2.md))
 - Ad-hoc spreadsheets for EOS meeting tracking
 
-**What is novel about 2.0:** EOS Level 10 Meeting methodology is a **first-class product surface**, not a bolt-on. V/TO, Rocks, Scorecard, Issues (IDS), To-Dos, Accountability Chart, live real-time meetings, Quarterly Conversations (QC) — all live. See [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md) for the authoritative product spec.
+**Flagship surfaces — what Unicorn 2.0 sells and what clients consume:**
+
+The product has three flagship surfaces, all consultant- or client-facing. EOS (below) is internal operating infrastructure, not the flagship.
+
+1. **CSC workflow** — the `CLIENTS` section of the staff sidebar. Where Client Success Consultants run their client portfolio end-to-end: client list with CSC load and risk levels, packages, document libraries (~575 docs), communications, support tickets, RTO tips, compliance auditor, audits. See [DashboardLayout.tsx:38-48](../src/components/DashboardLayout.tsx#L38-L48).
+2. **Client Portal** — the `/client/*` surfaces. What client RTOs see: home dashboard, documents, resource hub, calendar, notifications, reports, and (admin only) team management. ~14+ surfaces, all RLS-gated to the client's own tenant. See [DashboardLayout.tsx:125-143](../src/components/DashboardLayout.tsx#L125-L143).
+3. **Vivacity Academy** — the learning platform for client RTO staff. Role-specific course views (Trainer, Compliance Manager, Governance Person, SSO, Administration Assistant), certificates, assessments, events, community, and the **Professional Development Plan (PDP)** — a Standards-anchored evidence and reflection cycle that satisfies SRTO 2025 §3.1/3.2/3.3 and the Credential Policy CPD obligations. Vivacity staff manage content via a dedicated Academy Builder.
+
+**Where EOS Level 10 fits.** Vivacity runs *itself* on EOS — V/TO, Rocks, Scorecard, Issues (IDS), To-Dos, Accountability Chart, live Level 10 meetings, Quarterly Conversations. It's a first-class product surface but an **internal operating system**, not a saleable surface. EOS-tagged client items appear in CSC workflow contexts ("Client Impact"), but client RTOs do not access EOS directly. See [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md) for the authoritative spec and [reference/decision-trail.md#adr-013](../reference/decision-trail.md#adr-013) for the flagship reframing rationale.
 
 ---
 
@@ -57,10 +65,10 @@ Three concepts unlock 80% of the codebase:
 Every business-domain row has a `tenant_id`. Tenant `6372` is Vivacity — staff. All other tenants are client RTOs. A user belongs to one tenant via `tenant_members`; Vivacity Super Admins can switch active tenant via `set_active_tenant()`.
 
 ### 2. Two distinct UI surfaces
-- **Admin / consultant surface** — Vivacity staff views (`/manage-*`, `/tenant/:id/*`, `/admin/*`, `/eos/*`, `/audits/*`)
-- **Client surface** — client RTO views (`/client/eos`, tenant-scoped documents, their own tasks)
+- **Admin / consultant surface** — Vivacity staff sidebar with seven sections: `WORK`, `CLIENTS` (the CSC workflow flagship), `EOS`, `RESOURCE MANAGEMENT`, `ADMINISTRATION`, `ACADEMY BUILDER`, `SYSTEM CONFIG`. Visibility is role-aware (Super Admin / Team Leader / Team Member). See [DashboardLayout.tsx](../src/components/DashboardLayout.tsx).
+- **Client surface** — client RTO views under `/client/*` (Home, Documents, Resource Hub, Calendar, Notifications, Reports, Team) plus the Academy learner surface. Clients have **no EOS access** — EOS is Vivacity-internal.
 
-They share components but render different data based on `unicorn_role` + `tenant_id`. See [flow-patterns.md](../reference/flow-patterns.md#role-aware-rendering).
+They share UI primitives but render entirely different navigation and data based on `unicorn_role` + `tenant_id`. See [flow-patterns.md](../reference/flow-patterns.md#role-aware-rendering).
 
 ### 3. RLS is the security boundary
 All tenant isolation happens at the database layer via Postgres RLS. The frontend never enforces access control — it reads what RLS lets it read. This is non-negotiable. See [conventions.md](conventions.md#rls) and [decision-trail.md](../reference/decision-trail.md#adr-005) for the failure modes that make this rule hard.
@@ -129,35 +137,49 @@ The team is organised around four **seats** (responsibilities), not titles. The 
 
 ---
 
-## What's live (April 2026) — `unicorn-cms-f09c59e5`
+## What's live (May 2026) — `unicorn-cms-f09c59e5`
 
-**EOS Level 10 Meeting module** — The flagship. Implements EOS methodology end-to-end: V/TO, Rocks, Scorecard, Issues (IDS), To-Dos, live multi-participant Level 10 Meetings, Quarterly Conversations, and a filtered client-facing view. See [module-status.md#3-eos-level-10-meeting-module](../codebase-state/module-status.md#3-eos-level-10-meeting-module) for build status.
+Headlines below are ordered with the three flagship surfaces first, then supporting modules, then integrations. EOS is reclassified as the internal operating system (load-bearing, but not a flagship — see [reference/decision-trail.md#adr-013](../reference/decision-trail.md#adr-013)).
 
-**Audits module** — Runs Vivacity's compliance audit engagements (CHC, Mock, CRICOS, Due Diligence) against a 395-question bank; staff log findings, assign corrective actions, and generate reports with AI-assisted document analysis. See [module-status.md#4-audits--assessments](../codebase-state/module-status.md#4-audits--assessments) for build status.
+### Flagship surfaces
 
-**Multi-tenant user management** — Invite, role-assign, and manage users within any tenant. Covers the full invite-to-onboard flow, Super Admin password resets, and bulk actions across Vivacity and client roles. See [module-status.md#1-auth--user-management](../codebase-state/module-status.md#1-auth--user-management) for build status.
+**CSC workflow (CLIENTS section)** — flagship #1. The Client Success Consultant's daily workspace: a client list (~407 tenants in production) with CSC load distribution, risk levels, anniversaries, packages, and registration end dates; per-client packages, document libraries (~575 docs across ~21 categories), communications, support tickets, RTO tips, compliance auditor (AI-assisted), and audits. Drives the consulting business. See [DashboardLayout.tsx:38-48](../src/components/DashboardLayout.tsx#L38-L48) for the nav surface and [module-status.md#flagship-surfaces](../codebase-state/module-status.md#flagship-surfaces) for build status.
 
-**Tenant / client management** — Vivacity staff workspace for each client RTO: details, team members, documents, notes, tasks, engagement timeline, and impact metrics in one place. See [module-status.md#2-tenants--multi-tenancy](../codebase-state/module-status.md#2-tenants--multi-tenancy) for build status.
+**Client Portal (`/client/*`)** — flagship #2. What client RTOs experience: Home dashboard, Documents, Resource Hub (categorised compliance library), Calendar, Notifications, Reports, and — for tenant admins — Team management. ~14+ surfaces, all RLS-gated to the client's own tenant. EOS is intentionally absent — clients consume EOS-tagged outputs (e.g. Client Impact rollups) through their consultant, not through their own portal. See [DashboardLayout.tsx:125-143](../src/components/DashboardLayout.tsx#L125-L143) and [docs/client-portal/data-access-checklist.md](../docs/client-portal/data-access-checklist.md).
 
-**Package / pipeline stages** — Models Vivacity's service offerings as Packages with ordered stages; tracks each client's stage-instance progress with a health monitor and phase-completeness calculator. See [module-status.md#5-packages--pipeline-stages](../codebase-state/module-status.md#5-packages--pipeline-stages) for build status.
+**Vivacity Academy** — flagship #3. The learning offering to client RTO staff. Five role-specific learner surfaces (Trainer, Compliance Manager, Governance Person, Student Support Officer, Administration Assistant), courses, lessons, assessments, certificates, events, community. The **Professional Development Plan (PDP)** module — shipped May 2026 — anchors development goals to SRTO 2025 Standards, captures lesson reflections + manager reviews + CPD evidence, and surfaces a workforce dashboard for tenant admins and Vivacity Super Admins. Vivacity staff build content via the **Academy Builder** (`/superadmin/academy/*`); seat access gating is RLS-enforced. Stripe billing not yet wired. See [module-status.md#16-academy](../codebase-state/module-status.md#16-academy) and [#18-academy-pdp](../codebase-state/module-status.md#18-academy--professional-development-plan-pdp).
 
-**Outlook calendar sync + addin suite** — Syncs EOS meeting events to Microsoft Outlook; the addin functions let staff capture emails, log meeting notes, and draft time entries without leaving Outlook. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
+### Internal operating system
 
-**SharePoint integration** — Browse a client's SharePoint, import or link documents into Unicorn, and provision structured SharePoint folders for new clients. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
+**EOS Level 10 Meeting module** — Vivacity's internal operating system, not a saleable flagship. Implements EOS methodology end-to-end: Mission Control (V/TO), Rocks, Flight Plan, Scorecard, Risks & Opportunities, Issues (IDS), To-Dos, live multi-participant Level 10 Meetings, Quarterly Conversations, GWC Trends, Rock Analysis, Client Impact, Accountability Chart. The largest subtree in `src/components/`. Client RTOs do not access EOS directly; consultant-facing client items appear in CSC workflow contexts. See [module-status.md#3-eos-level-10-meeting-module](../codebase-state/module-status.md#3-eos-level-10-meeting-module) and [reference/decision-trail.md#adr-006](../reference/decision-trail.md#adr-006).
 
-**Microsoft 365 / Graph email** — Sends pipeline stage and consultant-composed emails via Microsoft Graph (bypassing Mailgun), and provisions M365 accounts for new client users. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
+### Platform & supporting modules
 
-**ClickUp integration** — Bidirectional task and time sync between Unicorn and ClickUp, plus bulk CSV import for migrating ClickUp-heavy clients. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
+**Audits module** — Runs Vivacity's compliance audit engagements (CHC, Mock, CRICOS, Due Diligence) against a 395-question bank; staff log findings, assign corrective actions, and generate reports with AI-assisted document analysis. The **AI audit stack** (April 2026) adds RAG-grounded finding drafts, evidence analysis, and executive summaries against an SRTO 2025 / National Code / ESOS corpus. Lives in the `CLIENTS` section. See [module-status.md#4-audits--assessments](../codebase-state/module-status.md#4-audits--assessments).
 
-**TGA / training.gov.au integration** — Queries the national training register to search, import, and keep RTO organisational records current — used at client onboarding and during compliance engagements. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations) for build status.
+**Multi-tenant user management** — Invite, role-assign, and manage users within any tenant. Covers the full invite-to-onboard flow, Super Admin password resets, and bulk actions across Vivacity and client roles. See [module-status.md#1-auth--user-management](../codebase-state/module-status.md#1-auth--user-management).
 
-**AI layer** — 40+ server-side functions routed through a central `ai-orchestrator`: compliance assistant chat, document analysis, vector knowledge search, research intelligence, evidence gap checks, and predictive risk scoring. AI logic is server-only (edge functions). See [module-status.md#14-ai--automation](../codebase-state/module-status.md#14-ai--automation) for build status.
+**Tenant / client management** — Powers the CSC workflow flagship: per-client workspace with details, team members, documents, notes, tasks, engagement timeline, and impact metrics. See [module-status.md#2-tenants--multi-tenancy](../codebase-state/module-status.md#2-tenants--multi-tenancy).
 
-**Academy module** — A learning platform for client RTO staff. Delivers role-specific course views (Trainer, Compliance Manager, Governance Person, Student Support Officer, Administration Assistant), certificates, assessments, events, and community. Vivacity Super Admins build and manage content via a dedicated course builder. Seat access gating is implemented; Stripe billing is not yet wired. See [module-status.md#16-academy](../codebase-state/module-status.md#16-academy) for build status.
+**Package / pipeline stages** — Models Vivacity's service offerings as Packages with ordered stages; tracks each client's stage-instance progress with a health monitor, phase-completeness calculator, and a duplicate-stream guard preventing two RTO/CRICOS/GTO packages on the same tenant. See [module-status.md#5-packages--pipeline-stages](../codebase-state/module-status.md#5-packages--pipeline-stages).
 
-**Resource Hub** — A categorised library of compliance documents, templates, checklists, and guides for client RTOs. Browsable by category (audit evidence, CI tools, registers, templates, training resources, etc.) with search and favourites. Both staff and client portal surfaces are live. See [module-status.md#17-resource-hub](../codebase-state/module-status.md#17-resource-hub) for build status.
+**Resource Hub** — A categorised library of compliance documents, templates, checklists, and guides. The staff-facing surface lives in the `RESOURCE MANAGEMENT` section (Templates Manager, Checklists Manager, Registers & Forms Manager, Audit & Evidence Library, Training & Webinar Library, Guides & How-To, CI Tools, Updates Log Manager); the client-facing surface is part of the Client Portal flagship. See [module-status.md#17-resource-hub](../codebase-state/module-status.md#17-resource-hub).
 
-**RTO tips / Tasks / Settings / Notifications** — Four lightweight modules: RTO Tips serves quick-reference compliance content to client RTOs; Tasks provides global and tenant-scoped task lists; Settings covers user profile, team config, and integration credentials; Notifications runs an in-app alert outbox pipeline. See [module-status.md#10-rto-tips](../codebase-state/module-status.md#10-rto-tips), [#8-tasks](../codebase-state/module-status.md#8-tasks), [#11-settings](../codebase-state/module-status.md#11-settings).
+**AI layer** — 40+ server-side functions routed through a central `ai-orchestrator`: compliance assistant chat, document analysis, vector knowledge search, research intelligence, evidence gap checks, predictive risk scoring, and the AI audit stack (RAG + Gemini 2.5 Pro). AI logic is server-only (edge functions). See [module-status.md#14-ai--automation](../codebase-state/module-status.md#14-ai--automation).
+
+### Integrations
+
+**Outlook calendar sync + addin suite** — Syncs EOS meeting events to Microsoft Outlook; the addin functions let staff capture emails, log meeting notes, and draft time entries without leaving Outlook. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations).
+
+**SharePoint integration** — Browse a client's SharePoint, import or link documents into Unicorn, and provision structured SharePoint folders for new clients. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations).
+
+**Microsoft 365 / Graph email** — Sends pipeline stage and consultant-composed emails via Microsoft Graph (bypassing Mailgun), and provisions M365 accounts for new client users. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations).
+
+**ClickUp integration** — Bidirectional task and time sync between Unicorn and ClickUp, plus bulk CSV import for migrating ClickUp-heavy clients. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations).
+
+**TGA / training.gov.au integration** — Queries the national training register to search, import, and keep RTO organisational records current — used at client onboarding and during compliance engagements. See [module-status.md#15-integrations](../codebase-state/module-status.md#15-integrations).
+
+**RTO Tips / Tasks / Settings / Notifications** — Four lightweight modules. RTO Tips serves quick-reference compliance content to client RTOs (lives in `CLIENTS` section); Tasks provides global and tenant-scoped task lists; Settings covers user profile, team config, and integration credentials; Notifications runs an in-app alert outbox pipeline. See [module-status.md#10-rto-tips](../codebase-state/module-status.md#10-rto-tips), [#8-tasks](../codebase-state/module-status.md#8-tasks), [#11-settings](../codebase-state/module-status.md#11-settings).
 
 ## What's NOT live (don't assume it is)
 
@@ -211,7 +233,7 @@ If you have a proposed change to the KB, see [handoffs/non-technical-proposal.md
 - [ ] Read [architecture.md](../codebase-state/architecture.md) end-to-end.
 - [ ] Skim every file in [src/pages/](../src/pages/) — names map directly to product surfaces.
 - [ ] Read one edge function front-to-back: [supabase/functions/invite-user/index.ts](../supabase/functions/invite-user/index.ts). It's the canonical service-role pattern.
-- [ ] Read [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md). It's the core product thesis.
+- [ ] Read [docs/EOS_LEVEL10_SPECIFICATION.md](../docs/EOS_LEVEL10_SPECIFICATION.md) — EOS is Vivacity's internal operating system. For the flagship product framing (what Unicorn 2.0 sells and what clients consume), see the **Flagship surfaces** section above and [reference/decision-trail.md#adr-013](../reference/decision-trail.md#adr-013).
 - [ ] Open [module-status.md](../codebase-state/module-status.md) and identify which modules are 🟡 partial — these are the highest-value areas to contribute to.
 - [ ] Ask Carl which open decisions in [decisions.md](decisions.md#open-decisions) are actively blocking work.
 
