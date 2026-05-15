@@ -1,10 +1,25 @@
 # Module Status
 
-> **Last updated:** 2026-05-11 · **Reconsider by:** 2026-06-30 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules.
+> **Last updated:** 2026-05-15 · **Reconsider by:** 2026-06-30 · **Confidence:** medium — module presence confirmed by files/routes; "shipped" vs "partial" calls need RJ confirmation for several modules. Flagship-surfaces framing added 2026-05-15 per ADR-013; module 3 (EOS) reclassified from "the flagship feature" to "Vivacity's internal operating system."
 >
-> **Reflects commit:** `<codebase>@893fc01a` (2026-05-11). AI audit stack (7 edge functions, 4 migrations) shipped 29–30 April 2026; Modules 4 and 14 updated accordingly. PDP schema applied 11 May 2026 (Module 18 added).
+> **Reflects commit:** `<codebase>@893fc01a` (2026-05-11) for module body content. Flagship-surfaces section at top sourced from `<codebase>@d240b112` (origin/main, 2026-05-15) — `DashboardLayout.tsx` nav structure. AI audit stack (7 edge functions, 4 migrations) shipped 29–30 April 2026; Modules 4 and 14 updated accordingly. PDP schema applied 11 May 2026 (Module 18 added).
 >
-> Live tracker for each module. Grounded in the actual `unicorn-cms-f09c59e5` codebase (April 2026). Many features previously flagged as "historical reference only" are now present in this codebase.
+> Live tracker for each module. Grounded in the actual `unicorn-cms-f09c59e5` codebase (April–May 2026). Many features previously flagged as "historical reference only" are now present in this codebase.
+
+---
+
+## Flagship surfaces
+
+Three product surfaces are flagship — what Vivacity sells and what clients consume. One additional surface (EOS) is load-bearing internally but not a flagship. The framing reset on 2026-05-15; see [reference/decision-trail.md#adr-013](../reference/decision-trail.md#adr-013).
+
+| Surface | Type | Status | Module entries below |
+|---|---|---|---|
+| **CSC workflow** (`CLIENTS` section) | Flagship #1 — consultant-facing | ✅ Shipped — actively iterated | §2 (Tenants), §5 (Packages), §7 (Documents), §4 (Audits), §10 (RTO Tips), §15 (integrations) |
+| **Client Portal** (`/client/*`) | Flagship #2 — client-facing | 🟡 Shipped, growing — see §6 | §6 (Client Portal), §17 (Resource Hub), §16 (Academy learner) |
+| **Vivacity Academy** | Flagship #3 — client-facing | ✅ Core shipped; §18 PDP partial | §16 (Academy), §18 (Academy PDP) |
+| EOS Level 10 (`EOS` section) | Internal operating system | ✅ Shipped | §3 |
+
+Why the distinction matters: revenue and renewal hinge on the three flagships. EOS is how Vivacity runs *itself*; degrading EOS hurts Vivacity's operating cadence but doesn't directly affect a client's experience. When prioritising work, flagship surfaces sit above internal-operating-system work unless a specific client-impact path is identified.
 
 ---
 
@@ -58,7 +73,7 @@
 
 ## 3. EOS Level 10 Meeting Module
 
-**Status:** ✅ Shipped — the flagship feature
+**Status:** ✅ Shipped — Vivacity's internal operating system (not a client-facing flagship; see [Flagship surfaces](#flagship-surfaces) and [ADR-013](../reference/decision-trail.md#adr-013))
 
 **What exists:**
 - V/TO editor (`/eos/vto`)
@@ -151,17 +166,25 @@
 
 ## 6. Client Portal
 
-**Status:** 🟡 Partial
+**Status:** 🟡 Shipped, growing — **Flagship #2** (see [Flagship surfaces](#flagship-surfaces))
 
-**What exists:**
-- `/client/eos` — client-facing EOS view
-- Tenant documents (`/tenant/:tenantId/documents`, `/tenant/:tenantId/document/:documentId`)
-- Tenant-scoped notes (`/tenant/:tenantId/notes`)
-- Client task views (`/tenant/:tenantId/tasks`)
+**What exists** — dedicated `/client/*` surface (sourced from `origin/main@d240b112` `DashboardLayout.tsx:125-143`):
+- `/client/home` — client home dashboard
+- `/client/documents` — client document library (RLS-scoped to own tenant)
+- `/client/resource-hub` — categorised compliance library (browser surface of the Resource Hub flagship-adjacent module §17)
+- `/client/calendar` — calendar
+- `/client/notifications` — notification inbox
+- `/client/reports` — reports
+- `/team-settings` — manage team (tenant admin only)
+- Client portal also embeds the Academy learner surface for licenced tenants (see §16)
+- ~14+ wrappers in `src/pages/client/` covering Files, Inbox, Profile, Suggestions, TGA Details, Packages, Tasks, Team, etc.
+- Data-access RLS checklist: [docs/client-portal/data-access-checklist.md](../docs/client-portal/data-access-checklist.md)
+
+**No EOS access for clients.** EOS is Vivacity-internal (see §3). Client-tagged EOS outputs reach clients via consultant-mediated surfaces (e.g. reports, document deliveries), not direct EOS access.
 
 **Remaining:**
-- Dedicated client-portal surface (vs. reusing admin routes with filters) — architectural clarification needed.
-- Audit portal views for clients (reports, action plan, prep checklist) — old docs list as live; not visibly scoped in current code.
+- Audit portal views for clients (reports, action plan, prep checklist) — partial; confirm scope
+- Confirm the legacy `/tenant/:tenantId/*` admin-view routes are deprecated for client use now that `/client/*` is the canonical surface
 
 ---
 
@@ -329,7 +352,7 @@
 
 ## 16. Academy
 
-**Status:** ✅ Shipped
+**Status:** ✅ Shipped — **Flagship #3** (see [Flagship surfaces](#flagship-surfaces))
 
 **What exists:**
 - Admin surface: `/academy`, `/academy/courses`, `/academy/certificates`, `/academy/events`, `/academy/community`, `/academy/team`, `/academy/settings`
@@ -427,7 +450,7 @@
 |---|---|---|
 | Auth & Users | ✅ | + bulk actions, resend/cancel invite, M365 provisioning |
 | Multi-tenancy | ✅ | Same conceptual model |
-| EOS Level 10 | ✅ | Flagship feature — fully shipped |
+| EOS Level 10 | ✅ | Vivacity's internal operating system — fully shipped; not a client-facing flagship (see ADR-013) |
 | Audits | 🟡 | + `analyze-document`, `research-audit-intelligence` now present; `generate-audit-report` still missing |
 | Packages / Pipeline | ✅ | `run-stage-health-monitor`, `calculate-phase-completeness` added |
 | Client Portal | 🟡 | Many new client pages (`ClientDetail`, `ClientImpact`, `ClientInbox`, `ClientCommunications`) |

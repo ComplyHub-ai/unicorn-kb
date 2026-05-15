@@ -1,6 +1,6 @@
 # Glossary
 
-> **Last updated:** 2026-04-28 · **Reconsider by:** 2027-04-23 · **Confidence:** high — vocabulary is stable; add terms when new ones appear in code or conversation.
+> **Last updated:** 2026-05-15 · **Reconsider by:** 2027-04-23 · **Confidence:** high — vocabulary is stable; add terms when new ones appear in code or conversation. 2026-05-15: added CSC, Flagship surface, and Internal operating system per ADR-013.
 >
 > Vocabulary reference for Unicorn 2.0: EOS, compliance/RTO, and product-internal terms.
 > If you don't know a term, it's probably here. If it's not, add it.
@@ -72,6 +72,10 @@ Australian vocational education compliance context. Vivacity's client base is RT
 | **Lovable** | The AI-assisted UI builder hosting the frontend. Connected to the GitHub repo. UI-layer only — schema goes through RJ. |
 | **Awesomate** | Australian-hosted n8n — the automation layer target. Referenced in sibling-project docs; not currently wired into this codebase. |
 | **CLO** | Compliance Lead Officer. A Vivacity staff role that owns the compliance work for a client engagement. Appears in Unicorn 1.0 as `package_instances.clo_id` (bigint, see [migration-1to2.md → Unicorn 1.0 user ID bridge](../reference/migration-1to2.md#unicorn-10-user-id-bridge-open)). Confirm with RJ how CLO assignment is modelled in 2.0 — it may be encoded via `unicorn_role` + tenant membership rather than a dedicated FK. |
+| **CSC** | Client Success Consultant. The Vivacity staff role that owns a client portfolio end-to-end. Visible in the `CLIENTS` section as the **CSC Load** widget — clients are assigned to a CSC (Samantha, Sharwari, AJ, Angela, Kelly, Ezel, etc.) with an unassigned bucket for unrouted tenants. CSCs work primarily out of the **CSC workflow** flagship surface. |
+| **CSC workflow** | The staff sidebar's `CLIENTS` section — Flagship #1. Where CSCs run their portfolio: client list, packages, documents, communications, support tickets, RTO tips, compliance auditor, audits. See [orientation.md → Flagship surfaces](orientation.md) and [ADR-013](../reference/decision-trail.md#adr-013). |
+| **Flagship surface** | A product surface that Vivacity sells and that clients consume. Unicorn 2.0 has three: CSC workflow, Client Portal, Vivacity Academy. Distinguished from **internal operating system** (EOS) which Vivacity uses to run itself but does not sell. ADR-013 (2026-05-15) is the framing decision. |
+| **Internal operating system** | A product surface that supports Vivacity's own operations but is not exposed to clients as a product. EOS Level 10 is the canonical example — Vivacity runs itself on EOS, client-tagged outputs flow through CSC workflow contexts, but client RTOs have no direct EOS access. Distinguished from **flagship surface**. |
 | **`dd_` prefix** | Data-dictionary / lookup table prefix from Unicorn 1.0 (e.g. `dd_document_categories`, `dd_fields`). Marks low-row-count reference tables. The 2.0 equivalents live behind `/manage-categories` and `/manage-fields`. |
 
 ---
