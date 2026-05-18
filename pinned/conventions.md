@@ -124,6 +124,25 @@ CREATE POLICY "deny_anon"
 
 **When NOT to archive instead:** moving a locked-down table to the `archive` schema is the right call when the table is *finished and immutable* (e.g., `archive.audit_log` shipped 14 May). Don't move tables that are still actively written to (`tenant_rto_scope_staging`) or are mid-lifecycle (`_tenant_users_contact_backfill_*` during burn-in). Also remember that `archive` has schema USAGE granted to `authenticated`, so it does NOT improve defense-in-depth for tables that started in a USAGE-denied schema like `unicorn1`.
 
+### Tables with broad RLS + sensitive columns (frontend whitelist required)
+
+When a table's row-level RLS lets clients read rows but some columns are
+too sensitive to expose under all read conditions (e.g. audit findings
+before report release), defense-in-depth requires the frontend to enforce
+explicit column selection. `select('*')` is forbidden on these tables
+from any client-reachable code path.
+
+"Client-reachable" = any hook used by a route inside `CLIENT_ROUTES`
+(`src/hooks/useRBAC.tsx`). The deny-by-default route guard in
+`src/components/ProtectedRoute.tsx` keeps staff-only routes off the
+client surface, so `select('*')` is still safe in staff-only hooks.
+
+| Table | Broad RLS policy | Sensitive columns |
+|---|---|---|
+| `public.client_audits` | `client_audits_tenant_read_active` (2026-05-18) — clients read active audits (draft/in_progress/review/complete) for their tenant | `executive_summary`, `overall_finding`, `score_total`, `score_max`, `score_pct`, `risk_rating`, `risk_rationale`, `report_pdf_path`, `report_release_notes`, `ai_analysis_status`, `intelligence_pack_id`, `assisted_by_id`, `report_prepared_by_id`, `template_id`, `closed_at` |
+
+**Origin:** 2026-05-18 RLS relaxation to surface the "Audit Readiness" tile and "Upcoming Compliance Audit" section on the real client portal (had been silently empty for client logins despite working in staff View-as-Client preview). See `unicorn-audit/audit/2026-05-18-evidence-request-workflow-restoration.md`.
+
 ### Public helper functions
 Always available in RLS policies:
 - `is_vivacity()` — current user is in tenant 6372
