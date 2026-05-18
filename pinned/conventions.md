@@ -143,6 +143,8 @@ client surface, so `select('*')` is still safe in staff-only hooks.
 
 **Origin:** 2026-05-18 RLS relaxation to surface the "Audit Readiness" tile and "Upcoming Compliance Audit" section on the real client portal (had been silently empty for client logins despite working in staff View-as-Client preview). See `unicorn-audit/audit/2026-05-18-evidence-request-workflow-restoration.md`.
 
+**Verifying the discipline holds:** the QA protocol at [`reference/client-portal-qa-protocol.md`](../reference/client-portal-qa-protocol.md) includes a Network-tab check for every broad-RLS surface — DevTools must show explicit `select=<columns>` on every request, never `select=*`. Run this protocol with a real client login (NOT staff View-as-Client) before shipping any feature on a tenant-scoped surface.
+
 ### Public helper functions
 Always available in RLS policies:
 - `is_vivacity()` — current user is in tenant 6372
