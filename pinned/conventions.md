@@ -145,6 +145,56 @@ client surface, so `select('*')` is still safe in staff-only hooks.
 
 **Verifying the discipline holds:** the QA protocol at [`reference/client-portal-qa-protocol.md`](../reference/client-portal-qa-protocol.md) includes a Network-tab check for every broad-RLS surface — DevTools must show explicit `select=<columns>` on every request, never `select=*`. Run this protocol with a real client login (NOT staff View-as-Client) before shipping any feature on a tenant-scoped surface.
 
+### Auth columns visible across tenant boundaries (mirror via trigger, don't view-join)
+
+When the client portal needs to render an `auth.users.<column>` value for users **other than the current viewer** (e.g. a team-members list showing each member's `last_sign_in_at`), you cannot simply join `auth.users` from a `security_invoker = true` view. `auth.users` RLS restricts `authenticated` to their own row only, so the view returns exactly one match — the caller's — and every other row's value appears NULL.
+
+**The pattern:** mirror the auth column into a `public.users.<column>` of the same shape, kept in sync via a SECURITY DEFINER trigger on `auth.users`.
+
+**Canonical implementation** (2026-05-20, see audit entry `unicorn-audit/audit/2026-05-20-last-sign-in-at-sync.md`):
+
+```sql
+-- 1. SECURITY DEFINER trigger function — fully schema-qualified,
+--    search_path = '' per Function hardening.
+CREATE OR REPLACE FUNCTION public.handle_<event>()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF NEW.<col> IS DISTINCT FROM OLD.<col> THEN
+    UPDATE public.users
+       SET <col> = NEW.<col>
+     WHERE user_uuid = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.handle_<event>() FROM PUBLIC;
+
+-- 2. AFTER UPDATE trigger on auth.users, column-scoped to fire only
+--    on the relevant column.
+CREATE TRIGGER on_auth_user_<event>
+AFTER UPDATE OF <col> ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_<event>();
+
+-- 3. One-shot idempotent backfill in the same migration.
+UPDATE public.users pu
+   SET <col> = au.<col>
+  FROM auth.users au
+ WHERE au.id = pu.user_uuid
+   AND pu.<col> IS DISTINCT FROM au.<col>;
+```
+
+**Reuse the existing function when possible.** `handle_user_login` (2026-05-20) already fires AFTER UPDATE on `auth.users` for `last_sign_in_at` and writes to `public.user_activity` — extending its body to also sync the public column is cheaper than a second trigger.
+
+**Side-effect check before extending.** The new UPDATE on `public.users` fires BEFORE UPDATE triggers on that table. Audit the chain (e.g. `update_users_updated_at`, audit-log triggers, role sync triggers). Accept cosmetic side-effects (e.g. `updated_at` bump on every login is semantically correct); flag any audit-log spam or recursive risk.
+
+**Why not a SECURITY DEFINER view or function?** Either could work, but they add a permission surface that needs hardening, and they don't help the many readers that already query `public.users` directly (hooks, views, edge functions, admin reports). Storing the mirrored value is simpler, idempotent, and benefits every reader without extra plumbing.
+
 ### Public helper functions
 Always available in RLS policies:
 - `is_vivacity()` — current user is in tenant 6372
