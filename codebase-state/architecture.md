@@ -145,6 +145,7 @@ All in [supabase/functions/](../supabase/functions/). Pattern: service-role Supa
 | `ai-orchestrator` | Central AI orchestration hub. |
 | `ai-suggest-rock` | AI-powered Rock suggestions. |
 | `academy-ai-generate` | Academy content generation. |
+| `generate-certificate-pdf` | Generates a branded A4 landscape PDF certificate from Angela's PNG template, uploads to `academy-certificates` storage bucket, and returns a signed download URL. Called from the learner certificates page on first download. |
 | `analyze-document` | Document AI analysis. |
 | `assistant-answer` / `copilot-chat` | AI assistant / copilot chat. |
 | `compliance-assistant` / `client-ai-companion` | Compliance and client-facing AI. |
