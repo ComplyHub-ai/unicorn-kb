@@ -361,7 +361,8 @@ Why the distinction matters: revenue and renewal hinge on the three flagships. E
 - Superadmin builder: `/superadmin/academy/builder`, `builder/:courseId`, enrollments, tenant access, package-course rules
 - Components (`src/components/academy/`): `AcademyAccessGate`, `CourseCard`, `SeatLimitBanner`, `EnrolmentProgressDrawer`, builder tools, layout shell
 - Hooks (`src/hooks/academy/`): `useAcademyCourses`, `useAcademyEnrollments`, `useAcademyCertificates`, `useAcademyPackageRules`, `useTenantAcademyAccess`, `useVideoLibrary`, builder hooks
-- Edge function: `academy-ai-generate`
+- Edge functions: `academy-ai-generate`, `generate-certificate-pdf` (PDF generation from Angela's branded A4 landscape template — shipped 25 May 2026)
+- Certificate template asset: `doc-templates/academy/certificate-template-a4.png` (private bucket — do not delete)
 - Total: ~30 page/wrapper files, 22 components, 9+ hooks
 
 **Admin tooling overhaul (`faafacb2`, 2026-04-21):**
