@@ -1,8 +1,8 @@
 # Codebase Map
 
-> **Last updated:** 2026-04-27 · **Reconsider by:** 2026-06-27 · **Confidence:** medium — tenant ID and docs table updated April 2026 audit; file moves/renames will desync this file fastest of any in the KB.
+> **Last updated:** 2026-05-28 · **Reconsider by:** 2026-06-27 · **Confidence:** medium — tenant ID and docs table updated April 2026 audit; file moves/renames will desync this file fastest of any in the KB.
 >
-> **Reflects commit:** `<codebase>@cf8d1314` (2026-04-25)
+> **Reflects commit:** `<codebase>@a30052a0` (2026-05-28) — most recent addition (client Files tab + SharePoint browser). Core structure reflects `<codebase>@cf8d1314` (2026-04-25).
 >
 > A navigational reference. Where to find things, what depends on what, and the mental path for common tasks.
 > Paths are relative to the repo root (`~/repository/unicorn-workspace/<codebase>` — alias defined in workspace root `CLAUDE.md`).
@@ -113,6 +113,10 @@ QueryClientProvider        — react-query cache
 - AuditReport
 - AuditTemplateBuilder
 
+**Client portal** (`src/pages/client/`)
+- ClientFilesPage — `/client/files` — shared folder card + inline SharePoint browser (bounded to shared folder subtree). Fetches `tenant_sharepoint_settings.shared_folder_name/url`; uses `useSharePointBrowser { useSharedFolder: true }`. Shipped 28 May 2026.
+- ClientDocumentsWrapper, ClientResourceHubPage, StaffPdpsPage, and ~10+ others
+
 **Other**
 - Dashboard
 - TasksManagement / TasksManagementWrapper
@@ -167,6 +171,7 @@ Stats cards, charts, week-tasks table.
 | useQuarterlyConversations | QC domain |
 | useNotifications | In-app notifications |
 | useRtoTips | RTO tips content |
+| useSharePointBrowser | SharePoint folder browser — wraps `browse-sharepoint-folder` edge function. Supports `{ useSharedFolder: true }` option: starts at and bounds navigation to `shared_folder_item_id`. Used by admin config pickers and (since 28 May 2026) by `ClientFilesPage` for the client-facing inline browser. Download action passes `use_shared_folder` flag to match browse boundary. |
 | useMobile | Viewport-based mobile detection |
 | useToast | shadcn toast wrapper |
 
@@ -218,6 +223,7 @@ Key navigational landmarks:
 | Function | Directory |
 |---|---|
 | invite-user | [supabase/functions/invite-user/](../supabase/functions/invite-user/) — canonical service-role pattern |
+| browse-sharepoint-folder | [supabase/functions/browse-sharepoint-folder/](../supabase/functions/browse-sharepoint-folder/) — list/download actions with `verifyWithinRoot` boundary check. `effectiveRootId` resolves to `shared_folder_item_id` when `use_shared_folder: true`, otherwise `root_item_id`. Boundary applies to both list and download (hardened 28 May 2026). |
 | ai-orchestrator | [supabase/functions/ai-orchestrator/](../supabase/functions/ai-orchestrator/) — central AI routing hub |
 | sync-outlook-calendar | [supabase/functions/sync-outlook-calendar/](../supabase/functions/sync-outlook-calendar/) |
 | outlook-auth | [supabase/functions/outlook-auth/](../supabase/functions/outlook-auth/) |
@@ -228,7 +234,7 @@ Key navigational landmarks:
 
 ### Migrations — [supabase/migrations/](../supabase/migrations/)
 
-895 migrations. Timestamped filenames. Most recent: 2026-04-23 (`20260423093423_…` — `fn_package_stream` + duplicate-package guard in `start_client_package`).
+900+ migrations. Timestamped filenames. Most recent known: 2026-05-28 (`20260528043747_…` — `shared_folder_url TEXT NULL` on `tenant_sharepoint_settings`). Earlier landmark: 2026-04-23 (`20260423093423_…` — `fn_package_stream` + duplicate-package guard in `start_client_package`).
 
 ### Email templates — [supabase/email-templates/](../supabase/email-templates/)
 
