@@ -150,7 +150,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 |---|---|---|---|---|
 | 0 | Security patches | 1 | ⬜ Todo | Nothing |
 | 1 | DB foundation | 5 | ⬜ Todo | Nothing |
-| 2 | Edge function updates | 3 | ⬜ Todo | Phase 1 deployed |
+| 2 | Edge function updates | 2 | ⬜ Todo | Phase 1 deployed |
 | 3 | `useRBAC.tsx` update | 1 | ⬜ Todo | Phase 1 deployed |
 | 4 | Staff reassignments | SQL only | ⬜ Todo | Phases 2 + 3 deployed |
 | 5 | Academy gates + bug fixes | 7 | ⬜ Todo | Phase 3 deployed |
@@ -163,6 +163,8 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 ## Phase 0 — Security patches
 
 **Run immediately. No dependencies.**
+
+> ⚠️ **Note:** The changes in Prompt 0.1 are a temporary hardening. Phase 2.2 supersedes them by replacing the entire permission check with `check_permission`. If Phase 2 deploys soon after Phase 0, the Phase 0 changes will be overwritten — that is expected and fine.
 
 Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Client Parent'`) can call internal-only functions because `user_type` is not checked alongside `unicorn_role`.
 
@@ -199,11 +201,13 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 
 ### Sub-prompt 1.2 — Implementation plan (plan mode ON)
 
-> Using the audit findings, produce the complete migration plan covering all three migrations below (A, B, C). For each migration include: lock impact, rollback SQL, and verification queries.
+> Using the audit findings, produce the complete migration plan covering all three migrations below (A, B, C). Note: Phase A adds new role rows to `dd_unicorn_roles` (no enum changes — the enum was archived May 2026 and `users.unicorn_role` is now a text FK). For each migration include: lock impact, rollback SQL, and verification queries.
 
 ### Sub-prompt 1.3 — Migration A: Seed new roles into `dd_unicorn_roles` (plan mode ON)
 
 > The `unicorn_role` PostgreSQL enum was archived in May 2026. `public.users.unicorn_role` is now `text NOT NULL` with a FK to `public.dd_unicorn_roles(value)`. Adding new roles requires only inserting rows — no `ALTER TYPE` needed.
+>
+> ⚠️ **Critical pre-check:** A migration in the codebase (around `20260518224543_`) contains a hardcoded assertion `IF v_canonical <> 6 THEN RAISE EXCEPTION` on `dd_unicorn_roles`. Adding 4 new rows takes the count to 10. Before running this migration, find that assertion and update it to `<> 10` in the same migration file — otherwise the deployment aborts.
 >
 > **Step 1 — Add `is_internal` column:**
 > ```sql
@@ -245,6 +249,8 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 
 ### Sub-prompt 1.4 — Migration B: Permission tables and `user_roles` junction table (plan mode ON)
 
+> ⚠️ **Ordering dependency:** The RLS policies below reference `public.is_vivacity_team_safe` and `public.is_super_admin_safe`. These functions already exist in the production DB but only know about the old 3-role model. They work for this migration because no staff hold new roles yet. Phase 1.5 then updates them to include new roles. If deploying to a fresh environment, run Phase 1.5 steps 1–5 (helper functions only, not `check_permission`) before this migration.
+>
 > Create four objects in a single migration: the `permission_level` enum, three permission tables (`permission_features`, `role_permissions`, `permission_change_log`), and the `user_roles` junction table. Apply RLS to all tables.
 >
 > **Step 1 — Permission level enum:**
@@ -449,6 +455,8 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 
 ### Sub-prompt 1.5 — Migration C: RLS helper functions (plan mode ON)
 
+> ⚠️ **Note:** `is_vivacity_team_safe` and `is_super_admin_safe` already exist in the production DB but are not in any migration file — they were likely created manually. Use `CREATE OR REPLACE FUNCTION` (already specified below) which handles both cases: updates if they exist, creates if they don't.
+>
 > Create or replace the RLS helper functions listed below. Every function must follow these conventions:
 > - `SET search_path = ''` (empty string, not `'public'`)
 > - All object references fully schema-qualified (e.g. `public.users`, `auth.uid()`)
@@ -585,6 +593,8 @@ GRANT EXECUTE ON FUNCTION public.check_permission(uuid, text, text) TO service_r
 
 > This is the single function called by edge functions, RLS policies, and (via the client) the `usePermission` hook. If no `role_permissions` row exists for a (feature_key, role) pair, the function returns `false` — safe default, surfaces as a gap in the editor.
 >
+> ⚠️ **`owner_only` is a UI-layer concept only.** The function compares levels numerically: `full`=4, `limited`=3, `owner_only`=2, `none`=1. An edge function calling with `p_min_level = 'limited'` will correctly return `false` for a user whose permission is `owner_only` — because `owner_only` means "only your own data" which requires resource context the function doesn't have. **Edge functions must only ever call `check_permission` with `'full'` or `'limited'` as `p_min_level`.** Never use `'owner_only'` in an edge function call — it's a UI display value only.
+>
 > **Verification:**
 > ```sql
 > -- SA user should get true for any feature
@@ -657,6 +667,59 @@ GRANT EXECUTE ON FUNCTION public.check_permission(uuid, text, text) TO service_r
 > Every function must still verify the caller is authenticated before calling `check_permission`. The RPC handles the role logic — do not add any role string checks on top of it.
 >
 > **Note on `supabase` client in edge functions:** use the service-role client (bypasses RLS) to call `check_permission` since it needs to read `users`, `user_roles`, and `role_permissions`. The function itself is `SECURITY DEFINER` so this is safe.
+>
+> **Additional changes required in this prompt — 4 files beyond the permission gate replacements:**
+>
+> **A — `supabase/functions/invite-user/index.ts`:** Update the `UnicornRole` type union (lines ~5–10) and the `VIVACITY_ROLES` array (lines ~28–33) to include all new values:
+> ```typescript
+> type UnicornRole =
+>   | "Super Admin" | "Team Leader" | "Team Member"
+>   | "Integrator" | "BGT" | "CSC" | "CET"
+>   | "Admin" | "User" | "Academy User";
+>
+> const VIVACITY_ROLES: UnicornRole[] = [
+>   "Super Admin", "Team Leader", "Team Member",
+>   "Integrator", "BGT", "CSC", "CET",
+> ];
+> ```
+>
+> **B — `supabase/functions/update-user-role/index.ts`:** Update the `UpdateUserRoleRequest` interface `unicorn_role` field to accept all roles. Also add the missing `Team Leader` case and new role cases to the `superadmin_level` auto-derive block:
+> ```typescript
+> interface UpdateUserRoleRequest {
+>   unicorn_role?: 'Super Admin' | 'Team Leader' | 'Team Member'
+>     | 'Integrator' | 'BGT' | 'CSC' | 'CET'
+>     | 'Admin' | 'User' | 'Academy User';
+>   // ... rest unchanged
+> }
+>
+> // Auto-derive superadmin_level update:
+> if (unicorn_role === 'Super Admin' && user_type === 'Vivacity') {
+>   updates.superadmin_level = 'Administrator';
+> } else if (unicorn_role === 'Super Admin' && user_type === 'Vivacity Team') {
+>   updates.superadmin_level = 'Administrator';
+> } else if (unicorn_role === 'Team Leader') {
+>   updates.superadmin_level = 'Team Leader';
+> } else {
+>   // Integrator, BGT, CSC, CET, Team Member, Admin, User — no superadmin_level
+>   updates.superadmin_level = null;
+> }
+> ```
+>
+> **C — `supabase/functions/send-invitation-email/index.ts`:** Add the 4 missing entries to `ROLE_LABELS`:
+> ```typescript
+> const ROLE_LABELS: Record<string, string> = {
+>   "Super Admin": "Super Admin",
+>   "Team Leader": "Team Leader",
+>   "Team Member": "Team Member",
+>   "Integrator": "Integrator",
+>   "BGT": "Business Growth Team",
+>   "CSC": "Client Success Champion",
+>   "CET": "Client Experience Team",
+>   Admin: "Organisation Admin",
+>   User: "General User",
+>   "Academy User": "Academy User",
+> };
+> ```
 
 ---
 
@@ -720,7 +783,21 @@ GRANT EXECUTE ON FUNCTION public.check_permission(uuid, text, text) TO service_r
 > ].includes(profile?.unicorn_role || '');
 > ```
 >
-> No other changes to `useRBAC.tsx`.
+> **Remove the `superadmin_level === 'Assistant'` special case** (around line 200):
+> ```typescript
+> // DELETE this entire block:
+> if (profile?.superadmin_level === 'Assistant') {
+>   userRole = 'Team Leader';
+> }
+> ```
+> This was a legacy workaround. After this change, role-based permissions derive solely from `unicorn_role`. Any user with `superadmin_level = 'Assistant'` will no longer be silently promoted to Team Leader permissions.
+>
+> **Also update `useAuth.tsx`** — the `UserProfile` interface `unicorn_role` type union is missing the new values. Add them:
+> ```typescript
+> unicorn_role: 'Super Admin' | 'Team Leader' | 'Team Member'
+>   | 'Integrator' | 'BGT' | 'CSC' | 'CET'
+>   | 'Admin' | 'User' | 'Academy User';
+> ```
 
 ---
 
@@ -754,14 +831,36 @@ UPDATE public.users SET unicorn_role = 'BGT', updated_at = now()
 -- Angela (angela@vivacity.com.au), Dave (dave@vivacity.com.au),
 -- Carl (carl@vivacity.com.au), Khian (brian@vivacity.com.au), RJ (Rhald@vivacity.com.au)
 -- all stay as 'Super Admin' — no change needed
+
+-- Clear superadmin_level for all reassigned staff
+-- (legacy field; new role model derives permissions from unicorn_role only)
+UPDATE public.users SET superadmin_level = null, updated_at = now()
+WHERE email IN (
+  'nova@vivacity.com.au',
+  'Sharwari@vivacity.com.au', 'kelly@vivacity.com.au', 'tanya@vivacity.com.au',
+  'AJ@vivacity.com.au', 'ezel@vivacity.com.au', 'sam@vivacity.com.au',
+  'beverly@vivacity.com.au'
+);
+
+-- Retire 'Team Member' — set is_active = false so it disappears from the
+-- permission editor column list. The test account (angela+invitetest) keeps
+-- the role value for now; it will still function but won't appear in editor columns.
+UPDATE public.dd_unicorn_roles SET is_active = false, updated_at = now()
+WHERE value = 'Team Member';
 ```
 
 **Verification:**
 ```sql
-SELECT email, unicorn_role FROM public.users
+-- Confirm role assignments
+SELECT email, unicorn_role, superadmin_level FROM public.users
 WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivacity.com.au',
   'Sharwari@vivacity.com.au', 'kelly@vivacity.com.au', 'AJ@vivacity.com.au',
   'ezel@vivacity.com.au', 'sam@vivacity.com.au');
+-- All superadmin_level values should be NULL
+
+-- Confirm Team Member is retired
+SELECT value, is_active FROM public.dd_unicorn_roles WHERE value = 'Team Member';
+-- Expect: is_active = false
 ```
 
 ---
@@ -1023,6 +1122,8 @@ WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivaci
 >   return false;
 > }
 > ```
+>
+> ⚠️ **Known optimisation gap:** The hook makes two separate queries (`role_permissions` and `user_roles`). Both are cached at 5 minutes so this is not a blocking issue, but they can get out of sync during a cache miss window. A future improvement would merge them into a single query. Do not fix in this prompt — note for a follow-up.
 
 ### Prompt 8.2 — Wire Academy module
 
@@ -1115,7 +1216,7 @@ If the migration is missing, the gaps query fires and the permission editor show
 
 ## Open questions
 
-- [ ] When `'Team Member'` is fully retired (all staff reassigned), add a row to `dd_unicorn_roles` with `is_active = false` rather than deleting — preserves audit history
 - [ ] CET members — assign when confirmed by Angela. Use `user_roles` for any staff who hold CET as an additional role
-- [ ] `update-user-role` edge function currently only accepts old role values in its request body type. Update its accepted values when Phase 2 is done
 - [ ] `user_roles` RLS currently allows all internal staff to read all assignments. If role assignments become sensitive, narrow to SA only
+- [ ] `usePermission` hook double-query optimisation — merge `role_permissions` + `user_roles` fetches into a single query or DB view (non-blocking, schedule as follow-up after Phase 8)
+- [ ] After `'Team Member'` is set inactive (Phase 4), decide when to remove it from `dd_unicorn_roles` entirely — only safe once the `angela+invitetest` test account is decommissioned
