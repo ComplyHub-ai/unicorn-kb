@@ -152,7 +152,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 | 1 | DB foundation | 5 | ✅ Done | Nothing |
 | 2 | Edge function updates | 2 | ✅ Done | Phase 1 deployed |
 | 3 | `useRBAC.tsx` update | 1 | ✅ Done | Phase 1 deployed |
-| 4 | Staff reassignments | SQL only | ⬜ Todo | Phases 2 + 3 deployed |
+| 4 | Staff reassignments | SQL only | ✅ Done | Phases 2 + 3 deployed |
 | 5 | Academy gates + bug fixes | 7 | ⬜ Todo | Phase 3 deployed |
 | 6 | Permission edge function | 1 | ⬜ Todo | Phase 1 deployed |
 | 7 | Permission editor UI | 1 | ⬜ Todo | Phase 6 deployed |
