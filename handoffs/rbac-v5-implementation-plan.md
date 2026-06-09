@@ -149,7 +149,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 | Phase | Name | Prompts | Status | Depends on |
 |---|---|---|---|---|
 | 0 | Security patches | 1 | ⬜ Todo | Nothing |
-| 1 | DB foundation | 5 | ⬜ Todo | Nothing |
+| 1 | DB foundation | 5 | ✅ Done | Nothing |
 | 2 | Edge function updates | 2 | ⬜ Todo | Phase 1 deployed |
 | 3 | `useRBAC.tsx` update | 1 | ⬜ Todo | Phase 1 deployed |
 | 4 | Staff reassignments | SQL only | ⬜ Todo | Phases 2 + 3 deployed |
