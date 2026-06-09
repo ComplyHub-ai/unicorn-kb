@@ -1217,6 +1217,7 @@ If the migration is missing, the gaps query fires and the permission editor show
 ## Open questions
 
 - [ ] CET members — assign when confirmed by Angela. Use `user_roles` for any staff who hold CET as an additional role
+- [ ] **Hardcoded role lists in frontend components** — after Phase 4 deployed, 5 additional files were found with stale `["Super Admin", "Team Leader", "Team Member"]` arrays outside `useRBAC.tsx`: `TenantTypeContext.tsx`, `DashboardLayout.tsx`, `ClientFilesTab.tsx`, `SharePointFolderConfig.tsx`, `PackageStagesManager.tsx`. All fixed as a hotfix. Before any future role additions, run a codebase grep for `Team Member` inside array literals to catch any stragglers.
 - [ ] `user_roles` RLS currently allows all internal staff to read all assignments. If role assignments become sensitive, narrow to SA only
 - [ ] `usePermission` hook double-query optimisation — merge `role_permissions` + `user_roles` fetches into a single query or DB view (non-blocking, schedule as follow-up after Phase 8)
 - [ ] After `'Team Member'` is set inactive (Phase 4), decide when to remove it from `dd_unicorn_roles` entirely — only safe once the `angela+invitetest` test account is decommissioned
