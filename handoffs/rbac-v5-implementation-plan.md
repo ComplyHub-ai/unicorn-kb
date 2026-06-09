@@ -159,7 +159,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 | 5 | Academy gates + bug fixes | 7 | ✅ Done | Phase 3 deployed |
 | 6 | Permission edge function | 1 | ✅ Done | Phase 4.3 deployed |
 | 7 | Permission editor UI | 1 | ✅ Done | Phase 6 deployed |
-| 8 | `usePermission` hook + wiring | 5 | 🔄 In progress (1/5) | Phase 7 + seed verified |
+| 8 | `usePermission` hook + wiring | 5 | ✅ Done | Phase 7 + seed verified |
 
 ---
 
