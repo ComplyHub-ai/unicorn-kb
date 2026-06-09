@@ -127,8 +127,8 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 
 | Name | Email | Current | Primary Role | Additional Role |
 |---|---|---|---|---|
-| Angela Connell-Richards | angela@vivacity.com.au | Super Admin | **Team Leader** | — |
-| Dave Richards | dave@vivacity.com.au | Super Admin | **Team Leader** | **BGT** |
+| Angela Connell-Richards | angela@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
+| Dave Richards | dave@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
 | Nova Canto | nova@vivacity.com.au | Super Admin | **Integrator** | — |
 | Sharwari Rajurkar | Sharwari@vivacity.com.au | Super Admin | **CHC** | — |
 | Kelly Xu | kelly@vivacity.com.au | Super Admin | **CHC** | — |
@@ -644,7 +644,6 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 -- Dry-run check
 SELECT email, unicorn_role FROM public.users
 WHERE email IN (
-  'angela@vivacity.com.au', 'dave@vivacity.com.au',
   'nova@vivacity.com.au',
   'Sharwari@vivacity.com.au', 'kelly@vivacity.com.au', 'tanya@vivacity.com.au',
   'AJ@vivacity.com.au', 'ezel@vivacity.com.au', 'sam@vivacity.com.au',
@@ -652,9 +651,6 @@ WHERE email IN (
 );
 
 -- Apply
-UPDATE public.users SET unicorn_role = 'Team Leader', updated_at = now()
-  WHERE email IN ('angela@vivacity.com.au', 'dave@vivacity.com.au');
-
 UPDATE public.users SET unicorn_role = 'Integrator', updated_at = now()
   WHERE email = 'nova@vivacity.com.au';
 
@@ -667,27 +663,17 @@ UPDATE public.users SET unicorn_role = 'CHC', updated_at = now()
 UPDATE public.users SET unicorn_role = 'BGT', updated_at = now()
   WHERE email = 'beverly@vivacity.com.au';
 
+-- Angela (angela@vivacity.com.au), Dave (dave@vivacity.com.au),
 -- Carl (carl@vivacity.com.au), Khian (brian@vivacity.com.au), RJ (Rhald@vivacity.com.au)
--- stay as 'Super Admin' — no change needed
-
--- Dave gets an additional BGT role via user_roles (multi-role)
-INSERT INTO public.user_roles (user_id, role, is_primary, assigned_by)
-SELECT u.user_uuid, 'BGT', false,
-  (SELECT user_uuid FROM public.users WHERE email = 'carl@vivacity.com.au')
-FROM public.users u
-WHERE u.email = 'dave@vivacity.com.au';
+-- all stay as 'Super Admin' — no change needed
 ```
 
 **Verification:**
 ```sql
 SELECT email, unicorn_role FROM public.users
-WHERE email IN ('angela@vivacity.com.au', 'dave@vivacity.com.au', 'nova@vivacity.com.au',
-  'beverly@vivacity.com.au', 'tanya@vivacity.com.au');
-
-SELECT u.email, ur.role, ur.is_primary
-FROM public.user_roles ur
-JOIN public.users u ON u.user_uuid = ur.user_id;
--- Expect: dave@vivacity.com.au | BGT | false
+WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivacity.com.au',
+  'Sharwari@vivacity.com.au', 'kelly@vivacity.com.au', 'AJ@vivacity.com.au',
+  'ezel@vivacity.com.au', 'sam@vivacity.com.au');
 ```
 
 ---
