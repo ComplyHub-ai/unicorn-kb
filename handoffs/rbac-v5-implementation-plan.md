@@ -158,7 +158,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 | 4.3 | DB function migration — stale `is_vivacity_*` helpers | 1 | ✅ Done | Phase 1 deployed |
 | 5 | Academy gates + bug fixes | 7 | ✅ Done | Phase 3 deployed |
 | 6 | Permission edge function | 1 | ✅ Done | Phase 4.3 deployed |
-| 7 | Permission editor UI | 1 | ⬜ Todo | Phase 6 deployed |
+| 7 | Permission editor UI | 1 | ✅ Done | Phase 6 deployed |
 | 8 | `usePermission` hook + wiring | 5 | ⬜ Todo | Phase 7 + seed verified |
 
 ---
