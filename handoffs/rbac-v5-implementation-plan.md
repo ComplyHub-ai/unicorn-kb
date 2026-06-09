@@ -526,6 +526,75 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 >
 > **Verification:** Call each function with a known Super Admin UUID — expect `true`. Call with a known client user UUID — expect `false`.
 
+**Step 2 — Add `check_permission` — the single gate used by all three layers:**
+
+```sql
+CREATE OR REPLACE FUNCTION public.check_permission(
+  p_user_id     uuid,
+  p_feature_key text,
+  p_min_level   text DEFAULT 'full'
+) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = '' AS $$
+  SELECT CASE
+    -- Super Admin always has full access regardless of role_permissions
+    WHEN EXISTS (
+      SELECT 1 FROM public.users u
+      WHERE u.user_uuid = p_user_id
+        AND u.unicorn_role = 'Super Admin'
+        AND u.is_vivacity_internal = true
+        AND (u.disabled = false OR u.disabled IS NULL)
+    ) THEN true
+
+    -- Check primary role + any additional roles from user_roles
+    ELSE EXISTS (
+      SELECT 1
+      FROM public.role_permissions rp
+      WHERE rp.feature_key = p_feature_key
+        AND rp.role IN (
+          SELECT u2.unicorn_role
+          FROM public.users u2
+          WHERE u2.user_uuid = p_user_id
+          UNION
+          SELECT ur.role
+          FROM public.user_roles ur
+          WHERE ur.user_id = p_user_id
+        )
+        AND CASE rp.permission
+              WHEN 'full'       THEN 4
+              WHEN 'limited'    THEN 3
+              WHEN 'owner_only' THEN 2
+              WHEN 'none'       THEN 1
+              ELSE 0
+            END
+            >=
+            CASE p_min_level
+              WHEN 'full'       THEN 4
+              WHEN 'limited'    THEN 3
+              WHEN 'owner_only' THEN 2
+              WHEN 'none'       THEN 1
+              ELSE 0
+            END
+    )
+  END;
+$$;
+
+REVOKE ALL ON FUNCTION public.check_permission(uuid, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.check_permission(uuid, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.check_permission(uuid, text, text) TO service_role;
+```
+
+> This is the single function called by edge functions, RLS policies, and (via the client) the `usePermission` hook. If no `role_permissions` row exists for a (feature_key, role) pair, the function returns `false` — safe default, surfaces as a gap in the editor.
+>
+> **Verification:**
+> ```sql
+> -- SA user should get true for any feature
+> SELECT public.check_permission('<sa-uuid>', 'admin.team_users.manage', 'full');
+> -- CSC user should get false for admin feature
+> SELECT public.check_permission('<csc-uuid>', 'admin.team_users.manage', 'full');
+> -- CSC user should get true for packages feature
+> SELECT public.check_permission('<csc-uuid>', 'packages.notes.add', 'full');
+> ```
+
 ---
 
 ## Phase 2 — Edge function updates
@@ -538,37 +607,56 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 >
 > In `auth-helpers.ts`:
 > - Update `VIVACITY_ROLES` array to: `['Super Admin', 'Team Leader', 'Team Member', 'Integrator', 'BGT', 'CSC', 'CET']` — keep `'Team Member'` during transition
-> - Update `SUPER_ADMIN_ROLE` constant to `'Super Admin'` (no change, just confirm)
-> - Export a named constant `VIVACITY_STAFF_ROLES` with the same value — other functions should import this instead of hardcoding their own lists
+> - Update `SUPER_ADMIN_ROLE` constant to `'Super Admin'`
+> - Export a named constant `VIVACITY_STAFF_ROLES` with the same value
 >
 > In `ask-viv-access.ts`:
-> - Update `VIVACITY_INTERNAL_ROLES` to the same list: `['Super Admin', 'Team Leader', 'Team Member', 'Integrator', 'BGT', 'CSC', 'CET']`
+> - Update `VIVACITY_INTERNAL_ROLES` to the same list
 >
 > No other files changed in this prompt.
 
-### Prompt 2.2 — Narrow administration functions to SA only
+### Prompt 2.2 — Replace hardcoded role checks with `check_permission`
 
-> Update the following edge functions. Only change the Vivacity staff permission check — do not touch client-side gates or business logic:
+> Replace the permission gate in each edge function below with a `check_permission` RPC call. This makes every function honour the `role_permissions` table — changing the permission editor immediately changes what the server accepts.
 >
-> - `supabase/functions/update-user-role/index.ts` — already SA only, update role string to use imported `SUPER_ADMIN_ROLE` constant
-> - `supabase/functions/bulk-user-action/index.ts` — already SA only, import and use `SUPER_ADMIN_ROLE`, remove `global_role` fallback
-> - `supabase/functions/bulk-send-invitations/index.ts` — same as bulk-user-action
-> - `supabase/functions/generate-recovery-link/index.ts` — same
-> - `supabase/functions/delete-user/index.ts` — Vivacity path only: update to `SUPER_ADMIN_ROLE`
-> - `supabase/functions/toggle-user-status/index.ts` — same
-> - `supabase/functions/bulk-account-actions/index.ts` — currently passes if `is_vivacity_team_safe OR is_super_admin_safe` (all team). Per RBAC v5 administration is SA-only. Narrow to `is_super_admin_safe` only.
-> - `supabase/functions/activate-ghost-user/index.ts` — same narrowing to `is_super_admin_safe`
-> - `supabase/functions/cohort-access-sender-worker/index.ts` — same narrowing
-
-### Prompt 2.3 — Open Team Leader access where RBAC v5 grants it
-
-> Update the following edge functions to grant Team Leader the access RBAC v5 specifies:
+> **Pattern to apply in every function:**
+> ```typescript
+> // Replace this kind of hardcoded check:
+> if (callerData.unicorn_role !== 'Super Admin') return jsonError(403, 'FORBIDDEN');
 >
-> - `supabase/functions/invite-user/index.ts` — Vivacity path: change `isVivacityStaff` check (currently all team) to TL + SA only: `unicorn_role IN ('Super Admin', 'Team Leader')`
-> - `supabase/functions/send-password-reset/index.ts` — expand Vivacity check from SA-only to `unicorn_role IN ('Super Admin', 'Team Leader')` and `user_type IN ('Vivacity', 'Vivacity Team')`
-> - `supabase/functions/update-user-profile/index.ts` — admin path for Vivacity staff profiles: expand to TL + SA
-> - `supabase/functions/resend-invite/index.ts` — update Super Admin check to `unicorn_role IN ('Super Admin', 'Team Leader')`
-> - `supabase/functions/cancel-invite/index.ts` — same
+> // With this:
+> const { data: allowed } = await supabase.rpc('check_permission', {
+>   p_user_id: caller.id,
+>   p_feature_key: 'feature.key.here',
+>   p_min_level: 'full',
+> });
+> if (!allowed) return jsonError(403, 'FORBIDDEN');
+> ```
+>
+> **Function → feature key mapping:**
+>
+> | Edge function | Feature key | Notes |
+> |---|---|---|
+> | `update-user-role` | `admin.team_users.manage` | Remove `global_role` fallback |
+> | `bulk-user-action` | `admin.team_users.manage` | Remove `global_role` fallback |
+> | `bulk-send-invitations` | `admin.invites.manage` | Remove `global_role` fallback |
+> | `generate-recovery-link` | `admin.team_users.manage` | |
+> | `delete-user` (Vivacity path) | `admin.team_users.manage` | Client path unchanged |
+> | `toggle-user-status` (Vivacity path) | `admin.team_users.manage` | Client path unchanged |
+> | `bulk-account-actions` | `admin.team_users.manage` | |
+> | `activate-ghost-user` | `admin.team_users.manage` | |
+> | `cohort-access-sender-worker` | `admin.cohort.send` | |
+> | `invite-user` (Vivacity path) | `admin.team_users.manage` | Client/tenant path unchanged |
+> | `send-password-reset` (Vivacity path) | `admin.team_users.manage` | Client path unchanged |
+> | `update-user-profile` (admin path) | `admin.team_users.manage` | Self-edit path unchanged |
+> | `resend-invite` (staff path) | `admin.invites.manage` | Remove `global_role` fallback |
+> | `cancel-invite` (staff path) | `admin.invites.manage` | Remove `global_role` fallback |
+> | `generate-release-documents` | `audits.report` | Also fixes the missing `user_type` check from Phase 0 |
+> | `export-compliance-pack` | `audits.report` | Same |
+>
+> Every function must still verify the caller is authenticated before calling `check_permission`. The RPC handles the role logic — do not add any role string checks on top of it.
+>
+> **Note on `supabase` client in edge functions:** use the service-role client (bypasses RLS) to call `check_permission` since it needs to read `users`, `user_roles`, and `role_permissions`. The function itself is `SECURITY DEFINER` so this is safe.
 
 ---
 
@@ -845,6 +933,25 @@ WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivaci
 > **Change Log drawer:**
 >
 > `View Change Log` opens a right-side drawer showing `permission_change_log` records, most recent first. Each entry displays: timestamp, changed-by name, feature label, role, old → new permission level, and reason. Filterable by date range, feature, and role.
+>
+> **Gaps detection:**
+>
+> On load, run this query and store the count:
+> ```sql
+> SELECT pf.feature_key, pf.label, dr.value AS role
+> FROM public.permission_features pf
+> CROSS JOIN public.dd_unicorn_roles dr
+> WHERE dr.is_internal = true AND dr.is_active = true
+> LEFT JOIN public.role_permissions rp
+>   ON rp.feature_key = pf.feature_key AND rp.role = dr.value
+> WHERE rp.id IS NULL;
+> ```
+>
+> If any gaps exist:
+> - Show a yellow warning banner at the top: `"⚠️ N unconfigured permissions — new features have been added without default permissions. Review and set below."`
+> - In the matrix, cells with no row render with a striped amber background and a `— Unset` label instead of a dropdown
+> - Clicking an unset cell opens the dropdown and saves a new row — it converts from gap to configured
+> - Gaps disappear from the banner count as they are resolved
 
 ---
 
@@ -946,8 +1053,55 @@ WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivaci
 
 ---
 
+## Convention: adding a new gateable feature
+
+Every time a developer adds a new page, button, or action that needs permission gating, the following must ship in the same PR — never separately.
+
+**Step 1 — Gate the code:**
+```typescript
+// Frontend
+const canAccess = usePermission('module.feature.action');
+
+// Edge function
+const { data: allowed } = await supabase.rpc('check_permission', {
+  p_user_id: caller.id,
+  p_feature_key: 'module.feature.action',
+  p_min_level: 'full',
+});
+if (!allowed) return jsonError(403, 'FORBIDDEN');
+```
+
+**Step 2 — Ship a migration in the same PR:**
+```sql
+-- Register the feature
+INSERT INTO public.permission_features (feature_key, label, module, category, sort_order)
+VALUES ('module.feature.action', 'Human readable label', 'Module Name', 'Category Name', 999)
+ON CONFLICT (feature_key) DO NOTHING;
+
+-- Seed permissions for all active internal roles (adjust levels per RBAC v5)
+INSERT INTO public.role_permissions (feature_key, role, permission)
+SELECT 'module.feature.action', dr.value,
+  CASE dr.value
+    WHEN 'Super Admin'  THEN 'full'::public.permission_level
+    WHEN 'Team Leader'  THEN 'full'::public.permission_level
+    WHEN 'Integrator'   THEN 'none'::public.permission_level
+    WHEN 'BGT'          THEN 'none'::public.permission_level
+    WHEN 'CSC'          THEN 'none'::public.permission_level
+    WHEN 'CET'          THEN 'none'::public.permission_level
+  END
+FROM public.dd_unicorn_roles dr
+WHERE dr.is_internal = true AND dr.is_active = true
+ON CONFLICT (feature_key, role) DO NOTHING;
+```
+
+If the migration is missing, the gaps query fires and the permission editor shows the unconfigured cells in amber. SA will see the warning and can configure from the editor — but the feature will be blocked for all non-SA staff until it is.
+
+---
+
 ## Key constraints (do not violate)
 
+- Every new gateable feature must ship `permission_features` + `role_permissions` seed in the same PR — never separately
+- `check_permission` is the single gate for all three layers (UI hook, edge function, RLS) — do not add separate role string checks alongside it
 - Phase 4 SQL must not run before Phases 2 and 3 are verified in production
 - SA column in the permission editor is always Full — enforced in both UI and edge function
 - `update-role-permission` must validate roles against `dd_unicorn_roles` dynamically — never hardcode
