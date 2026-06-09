@@ -10,9 +10,9 @@
 
 | # | Decision | Answer |
 |---|---|---|
-| 1 | Role name case convention | Title case — match existing (`'Super Admin'`, `'Team Leader'`). New values: `'Integrator'`, `'BGT'`, `'CHC'`, `'CET'` |
+| 1 | Role name case convention | Title case — match existing (`'Super Admin'`, `'Team Leader'`). New values: `'Integrator'`, `'BGT'`, `'CSC'`, `'CET'` |
 | 2 | Multiple roles per user | **Supported via `user_roles` junction table.** `users.unicorn_role` stays as the primary role for backward compatibility. Dave = primary Team Leader + additional BGT. |
-| 3 | Sam Holtham role | CHC |
+| 3 | Sam Holtham role | CSC |
 | 4 | Beverly Pastor-Ambo role | BGT |
 | 5 | CET members | Nobody assigned for now — role definition implemented, leave unassigned |
 | 6 | `is_vivacity_internal` | Already `true` for all 14 staff. Column is a boolean double-check in RLS helpers. Not a blocker. |
@@ -31,7 +31,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 | `Team Leader` | Team Leader | true | 2 | Keep |
 | `Integrator` | Integrator | true | 3 | **Add in Phase 1.3** |
 | `BGT` | Business Growth Team | true | 4 | **Add in Phase 1.3** |
-| `CHC` | Client Success Champion | true | 5 | **Add in Phase 1.3** |
+| `CSC` | Client Success Champion | true | 5 | **Add in Phase 1.3** |
 | `CET` | Client Experience Team | true | 6 | **Add in Phase 1.3** |
 | `Team Member` | Team Member | true | 7 | Keep (transitional — retire after Phase 4) |
 | `Admin` | Admin | false | 8 | Keep |
@@ -44,7 +44,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 
 **Legend:** ● Full | ◐ Limited | ★ Owner only | ○ None
 
-| Feature key | SA | TL | INT | BGT | CHC | CET |
+| Feature key | SA | TL | INT | BGT | CSC | CET |
 |---|---|---|---|---|---|---|
 | **ADMINISTRATION** | | | | | | |
 | `admin.team_users.manage` | ● | ○ | ○ | ○ | ○ | ○ |
@@ -130,12 +130,12 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 | Angela Connell-Richards | angela@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
 | Dave Richards | dave@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
 | Nova Canto | nova@vivacity.com.au | Super Admin | **Integrator** | — |
-| Sharwari Rajurkar | Sharwari@vivacity.com.au | Super Admin | **CHC** | — |
-| Kelly Xu | kelly@vivacity.com.au | Super Admin | **CHC** | — |
-| Tanya Janklin | tanya@vivacity.com.au | Super Admin | **CHC** | — |
-| AJ Delostrico | AJ@vivacity.com.au | Super Admin | **CHC** | — |
-| Ezel Olores | ezel@vivacity.com.au | Super Admin | **CHC** | — |
-| Samantha Holtham | sam@vivacity.com.au | Super Admin | **CHC** | — |
+| Sharwari Rajurkar | Sharwari@vivacity.com.au | Super Admin | **CSC** | — |
+| Kelly Xu | kelly@vivacity.com.au | Super Admin | **CSC** | — |
+| Tanya Janklin | tanya@vivacity.com.au | Super Admin | **CSC** | — |
+| AJ Delostrico | AJ@vivacity.com.au | Super Admin | **CSC** | — |
+| Ezel Olores | ezel@vivacity.com.au | Super Admin | **CSC** | — |
+| Samantha Holtham | sam@vivacity.com.au | Super Admin | **CSC** | — |
 | Beverly Pastor-Ambo | beverly@vivacity.com.au | Super Admin | **BGT** | — |
 | Carl Simpao | carl@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
 | Khian Sismundo | brian@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
@@ -224,7 +224,7 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 > VALUES
 >   ('Integrator',               'Integrator', 'Integrator seat — EOS operations, process management, and meeting facilitation', true, true, 3),
 >   ('BGT',                      'BGT',        'Business Growth Team — sales, pipeline, and package delivery', true, true, 4),
->   ('Client Success Champion',  'CHC',        'Primary client delivery team — daily package delivery and audit setup', true, true, 5),
+>   ('Client Success Champion',  'CSC',        'Client Success Champion — primary client delivery team, daily package delivery and audit setup', true, true, 5),
 >   ('Client Experience Team',   'CET',        'Client relationship and experience — notes, actions, documents, timeline', true, true, 6)
 > ON CONFLICT (value) DO NOTHING;
 >
@@ -240,7 +240,7 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 > SELECT value, label, is_internal, sort_order
 > FROM public.dd_unicorn_roles
 > ORDER BY sort_order;
-> -- Expect 10 rows. Rows 3-6 should be Integrator, BGT, CHC, CET with is_internal = true.
+> -- Expect 10 rows. Rows 3-6 should be Integrator, BGT, CSC, CET with is_internal = true.
 > ```
 
 ### Sub-prompt 1.4 — Migration B: Permission tables and `user_roles` junction table (plan mode ON)
@@ -431,7 +431,7 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 > ('admin.team_users.manage', 'Team Leader', 'none'),
 > ('admin.team_users.manage', 'Integrator',  'none'),
 > ('admin.team_users.manage', 'BGT',         'none'),
-> ('admin.team_users.manage', 'CHC',         'none'),
+> ('admin.team_users.manage', 'CSC',         'none'),
 > ('admin.team_users.manage', 'CET',         'none'),
 > -- ... continue for all 64 features following the matrix ...
 > ON CONFLICT (feature_key, role) DO UPDATE SET permission = EXCLUDED.permission;
@@ -443,7 +443,7 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 > SELECT COUNT(*) FROM role_permissions;           -- expect 384 (64 × 6)
 > SELECT COUNT(*) FROM role_permissions
 >   WHERE permission != 'none'
->   AND role = 'CHC';                              -- spot-check CHC has non-none permissions
+>   AND role = 'CSC';                              -- spot-check CSC has non-none permissions
 > SELECT COUNT(*) FROM user_roles;                 -- expect 0 (populated in Phase 4)
 > ```
 
@@ -464,7 +464,7 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 >   SELECT EXISTS (
 >     SELECT 1 FROM public.users u
 >     WHERE u.user_uuid = p_user_id
->       AND u.unicorn_role IN ('Super Admin','Team Leader','Integrator','BGT','CHC','CET')
+>       AND u.unicorn_role IN ('Super Admin','Team Leader','Integrator','BGT','CSC','CET')
 >       AND u.is_vivacity_internal = true
 >       AND (u.disabled = false OR u.disabled IS NULL)
 >   );
@@ -537,12 +537,12 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 > **Files:** `supabase/functions/_shared/auth-helpers.ts`, `supabase/functions/_shared/ask-viv-access.ts`
 >
 > In `auth-helpers.ts`:
-> - Update `VIVACITY_ROLES` array to: `['Super Admin', 'Team Leader', 'Team Member', 'Integrator', 'BGT', 'CHC', 'CET']` — keep `'Team Member'` during transition
+> - Update `VIVACITY_ROLES` array to: `['Super Admin', 'Team Leader', 'Team Member', 'Integrator', 'BGT', 'CSC', 'CET']` — keep `'Team Member'` during transition
 > - Update `SUPER_ADMIN_ROLE` constant to `'Super Admin'` (no change, just confirm)
 > - Export a named constant `VIVACITY_STAFF_ROLES` with the same value — other functions should import this instead of hardcoding their own lists
 >
 > In `ask-viv-access.ts`:
-> - Update `VIVACITY_INTERNAL_ROLES` to the same list: `['Super Admin', 'Team Leader', 'Team Member', 'Integrator', 'BGT', 'CHC', 'CET']`
+> - Update `VIVACITY_INTERNAL_ROLES` to the same list: `['Super Admin', 'Team Leader', 'Team Member', 'Integrator', 'BGT', 'CSC', 'CET']`
 >
 > No other files changed in this prompt.
 
@@ -606,7 +606,7 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 >   'rocks:edit_own',
 >   'risks:create',
 > ],
-> 'CHC': [
+> 'CSC': [
 >   'advanced_features:access',
 >   'eos:access',
 >   'ask_viv:access',
@@ -628,7 +628,7 @@ Two live gaps where Client Admins (`unicorn_role = 'Admin'`, `user_type = 'Clien
 > ```typescript
 > const is_vivacity_team = [
 >   'Super Admin', 'Team Leader', 'Team Member',
->   'Integrator', 'BGT', 'CHC', 'CET'
+>   'Integrator', 'BGT', 'CSC', 'CET'
 > ].includes(profile?.unicorn_role || '');
 > ```
 >
@@ -654,7 +654,7 @@ WHERE email IN (
 UPDATE public.users SET unicorn_role = 'Integrator', updated_at = now()
   WHERE email = 'nova@vivacity.com.au';
 
-UPDATE public.users SET unicorn_role = 'CHC', updated_at = now()
+UPDATE public.users SET unicorn_role = 'CSC', updated_at = now()
   WHERE email IN (
     'Sharwari@vivacity.com.au', 'kelly@vivacity.com.au', 'tanya@vivacity.com.au',
     'AJ@vivacity.com.au', 'ezel@vivacity.com.au', 'sam@vivacity.com.au'
@@ -710,7 +710,7 @@ WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivaci
 
 > **Access rule:** Team Leader and Super Admin only. All other roles must not see this page.
 >
-> - Hide the Tenant Access item from the Academy sub-navigation for Integrator, BGT, CHC, CET — use `useRBAC` to check `isSuperAdmin || unicorn_role === 'Team Leader'`
+> - Hide the Tenant Access item from the Academy sub-navigation for Integrator, BGT, CSC, CET — use `useRBAC` to check `isSuperAdmin || unicorn_role === 'Team Leader'`
 > - Gate the enable/disable tenant toggle: TL + SA only — hidden for all other roles
 > - Gate the Edit action button per row: TL + SA only
 > - Gate the Enrolments link per row: TL + SA only
@@ -719,21 +719,21 @@ WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivaci
 ### Prompt 5.4 — Enrolments RBAC
 
 > - All roles can view the Enrolments page and the full enrolment list (no restriction on viewing)
-> - `+ New Enrolment` button: visible to TL, BGT, CHC only — hidden for SA (can use anyway), Integrator, and CET
-> - `Export CSV` button: TL + SA only — hidden for Integrator, BGT, CHC, CET
+> - `+ New Enrolment` button: visible to TL, BGT, CSC only — hidden for SA (can use anyway), Integrator, and CET
+> - `Export CSV` button: TL + SA only — hidden for Integrator, BGT, CSC, CET
 > - Revoke / expire actions on individual rows: TL + SA only — hidden for all other roles
 > - Source filter chips (Manual, Auto Package, etc.): visible to all — no change
 
 ### Prompt 5.5 — Certificates RBAC
 
 > - The Certificates page is visible to all internal roles — no nav restriction
-> - `Issue Certificate Manually` button: TL + SA only — hidden for Integrator, BGT, CHC, CET
+> - `Issue Certificate Manually` button: TL + SA only — hidden for Integrator, BGT, CSC, CET
 > - Three-dot Actions menu on each certificate row: TL + SA only — hidden for all other roles
 
 ### Prompt 5.6 — Academy Builder RBAC
 
 > - All roles can view the course library
-> - `+ New Course` button: TL + BGT only — hidden for Integrator, CHC, CET, SA (SA can still access the page but the button follows the rule)
+> - `+ New Course` button: TL + BGT only — hidden for Integrator, CSC, CET, SA (SA can still access the page but the button follows the rule)
 > - `Backfill Video Durations` button: TL + SA only — hidden for all other roles
 > - Within a course, edit controls (add/edit modules, lessons, content): TL + BGT
 > - Publish / Unpublish action: TL + SA only
@@ -741,7 +741,7 @@ WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivaci
 
 ### Prompt 5.7 — Package → Course Mapping RBAC
 
-> - Hide this page from BGT, CHC, CET navigation — they should not see it at all
+> - Hide this page from BGT, CSC, CET navigation — they should not see it at all
 > - Page accessible to TL, Integrator, and SA only
 > - Integrator view is read-only: all matrix cells non-interactive, all action buttons hidden, show a "View only" indicator
 > - `+ New rule` button: TL + SA only
