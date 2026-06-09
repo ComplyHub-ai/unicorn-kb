@@ -155,7 +155,7 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 | 4 | Staff reassignments | SQL only | ✅ Done | Phases 2 + 3 deployed |
 | 4.1 | Hotfix — stale frontend role lists (TenantTypeContext etc.) | Hotfix | ✅ Done | Phase 4 deployed |
 | 4.2 | `vivacityRoles.ts` — centralise frontend role list | 1 | ✅ Done | Phase 4.1 done |
-| 4.3 | DB function migration — stale `is_vivacity_*` helpers | 1 | ⬜ Next | Phase 1 deployed |
+| 4.3 | DB function migration — stale `is_vivacity_*` helpers | 1 | ✅ Done | Phase 1 deployed |
 | 5 | Academy gates + bug fixes | 7 | ✅ Done | Phase 3 deployed |
 | 6 | Permission edge function | 1 | ⬜ Todo | Phase 4.3 deployed |
 | 7 | Permission editor UI | 1 | ⬜ Todo | Phase 6 deployed |
