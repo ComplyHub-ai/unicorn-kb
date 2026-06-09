@@ -148,13 +148,16 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 
 | Phase | Name | Prompts | Status | Depends on |
 |---|---|---|---|---|
-| 0 | Security patches | 1 | ⬜ Todo | Nothing |
+| 0 | Security patches | 1 | ✅ Done | Nothing |
 | 1 | DB foundation | 5 | ✅ Done | Nothing |
 | 2 | Edge function updates | 2 | ✅ Done | Phase 1 deployed |
 | 3 | `useRBAC.tsx` update | 1 | ✅ Done | Phase 1 deployed |
 | 4 | Staff reassignments | SQL only | ✅ Done | Phases 2 + 3 deployed |
+| 4.1 | Hotfix — stale frontend role lists (TenantTypeContext etc.) | Hotfix | ✅ Done | Phase 4 deployed |
+| 4.2 | `vivacityRoles.ts` — centralise frontend role list | 1 | ✅ Done | Phase 4.1 done |
+| 4.3 | DB function migration — stale `is_vivacity_*` helpers | 1 | ⬜ Next | Phase 1 deployed |
 | 5 | Academy gates + bug fixes | 7 | ✅ Done | Phase 3 deployed |
-| 6 | Permission edge function | 1 | ⬜ Todo | Phase 1 deployed |
+| 6 | Permission edge function | 1 | ⬜ Todo | Phase 4.3 deployed |
 | 7 | Permission editor UI | 1 | ⬜ Todo | Phase 6 deployed |
 | 8 | `usePermission` hook + wiring | 5 | ⬜ Todo | Phase 7 + seed verified |
 
@@ -862,6 +865,79 @@ WHERE email IN ('nova@vivacity.com.au', 'beverly@vivacity.com.au', 'tanya@vivaci
 SELECT value, is_active FROM public.dd_unicorn_roles WHERE value = 'Team Member';
 -- Expect: is_active = false
 ```
+
+---
+
+## Phase 4.3 — DB function migration: stale `is_vivacity_*` helpers
+
+**Depends on Phase 1. Lovable migration, full production DB protocol.**
+
+Nine DB functions still hardcode `unicorn_role IN ('Super Admin', 'Team Leader', 'Team Member')`. They need to check `is_vivacity_internal` instead — a single boolean that `sync_is_vivacity_internal` now maintains automatically from `dd_unicorn_roles`. This makes adding future roles a zero-code-change operation at the DB layer.
+
+> **Lovable prompt (plan mode ON first):**
+>
+> Create a single migration that replaces all stale Vivacity-staff helper functions. Use `CREATE OR REPLACE` throughout. Keep existing `search_path` settings on functions that already have them.
+>
+> **Trigger functions — already fixed manually; include to make canonical in migrations:**
+>
+> ```sql
+> -- sync_is_vivacity_internal: derive from dd_unicorn_roles
+> CREATE OR REPLACE FUNCTION public.sync_is_vivacity_internal()
+> RETURNS trigger LANGUAGE plpgsql AS $$
+> BEGIN
+>   SELECT COALESCE(is_internal, false) INTO NEW.is_vivacity_internal
+>   FROM public.dd_unicorn_roles WHERE value = NEW.unicorn_role;
+>   IF NOT FOUND THEN NEW.is_vivacity_internal := false; END IF;
+>   RETURN NEW;
+> END; $$;
+>
+> -- set_user_type_from_role: derive from dd_unicorn_roles
+> CREATE OR REPLACE FUNCTION public.set_user_type_from_role()
+> RETURNS trigger LANGUAGE plpgsql AS $$
+> DECLARE v_is_internal boolean;
+> BEGIN
+>   SELECT COALESCE(is_internal, false) INTO v_is_internal
+>   FROM public.dd_unicorn_roles WHERE value = NEW.unicorn_role;
+>   IF v_is_internal THEN NEW.user_type := 'Vivacity Team';
+>   ELSIF NEW.unicorn_role = 'Admin' THEN NEW.user_type := 'Client Parent';
+>   ELSIF NEW.unicorn_role IN ('User', 'Academy User') THEN NEW.user_type := 'Client Child';
+>   END IF;
+>   RETURN NEW;
+> END; $$;
+> ```
+>
+> **Staff-check functions — replace hardcoded role IN list with `is_vivacity_internal = true`:**
+>
+> For each function below, find the clause `unicorn_role IN ('Super Admin', 'Team Leader', 'Team Member')` and replace it with `is_vivacity_internal = true`. Keep everything else (archived check, auth.uid() vs p_user_id, search_path, SECURITY DEFINER) exactly as-is:
+>
+> - `is_vivacity`
+> - `is_vivacity_member`
+> - `is_vivacity_staff`
+> - `is_vivacity_team` (both overloads — one takes `auth.uid()`, one takes `p_user_id`)
+> - `is_vivacity_team_rls`
+> - `is_vivacity_team_user`
+> - `is_vivacity_team_v2`
+> - `is_staff` (also check both `global_role` and `unicorn_role` branches)
+> - `can_access_vivacity_meetings`
+>
+> **Additional functions to update:**
+>
+> - `fn_notify_csc_on_support_ticket` — change `unicorn_role IN ('Super Admin','Team Leader','Team Member')` to `is_vivacity_internal = true`
+> - `get_vivacity_team_directory` and `get_vivacity_team_directory_staff` — same substitution
+> - `create_meeting_from_template` (both overloads) — the L10 participant INSERT filters by old role list; change to `is_vivacity_internal = true AND COALESCE(archived, false) = false`
+> - `enforce_level10_participants` — same substitution
+> - `sync_l10_meeting_participants` — same substitution
+>
+> **Post-migration verification:**
+> ```sql
+> SELECT u.email, u.unicorn_role, u.is_vivacity_internal,
+>   public.is_vivacity_team_safe(u.user_uuid) AS safe,
+>   public.is_any_team_member(u.user_uuid) AS any_team
+> FROM public.users u
+> WHERE u.unicorn_role IN ('Integrator','BGT','CSC','CET')
+>   AND (u.disabled = false OR u.disabled IS NULL);
+> -- All rows must show: is_vivacity_internal=true, safe=true, any_team=true
+> ```
 
 ---
 
