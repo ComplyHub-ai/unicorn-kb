@@ -35,7 +35,7 @@ The staff dashboard triage view has three compounding issues:
 | Phase | Name | Type | Status | Depends on |
 |---|---|---|---|---|
 | 0 | Fix `v_dashboard_tenant_portfolio` view | Lovable DB migration | ✅ Done | Nothing |
-| 1 | Add cron jobs for health + forecast | Direct SQL | ⬜ Todo | Phase 0 deployed |
+| 1 | Add cron jobs for health + forecast | Direct SQL | 🔄 Partial | Phase 0 deployed |
 | 2 | Frontend: lightweight "All Clients" query | Lovable frontend | ⬜ Todo | Nothing (parallel with Phase 0) |
 | 3 | Fix stage status value inconsistency | Lovable DB migration | ⬜ Todo | Phase 1 run once manually |
 
