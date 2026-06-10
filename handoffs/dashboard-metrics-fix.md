@@ -38,6 +38,7 @@ The staff dashboard triage view has three compounding issues:
 | 1 | Add cron jobs for health + forecast | Direct SQL | ✅ Done | Phase 0 deployed |
 | 2 | Frontend: lightweight "All Clients" query | Lovable frontend | ✅ Done | Nothing (parallel with Phase 0) |
 | 3 | Fix stage status value inconsistency | Direct SQL | ✅ Done | Phase 1 run once manually |
+| 4 | CSC data sync + labour efficiency fixes | Direct SQL + Lovable | ✅ Done | Phases 0–3 done |
 
 ---
 
@@ -304,9 +305,66 @@ UPDATE public.stage_instances SET status = 'not_started'  WHERE status = 'Not St
 
 ---
 
+## Phase 4 — CSC data sync + dashboard discrepancy fixes (10 June 2026)
+
+Post-deployment review surfaced three additional issues. All fixed same-day.
+
+### 4A — CSC mismatch: `tenants.assigned_consultant_user_id` out of sync
+
+**Problem:** `v_dashboard_tenant_portfolio` reads `tenants.assigned_consultant_user_id` for the CSC column. `tenant_csc_assignments` (canonical per `MEMORY.md`) had diverged — 20 of 61 active tenants pointed to the wrong CSC (mostly showing Jose Tinaja instead of AJ Delostrico). The dashboard portfolio and the client detail page showed different CSC names.
+
+**Fix (direct SQL):**
+```sql
+UPDATE tenants t
+SET assigned_consultant_user_id = tca.csc_user_id
+FROM tenant_csc_assignments tca
+WHERE tca.tenant_id = t.id
+  AND tca.is_primary = true
+  AND t.assigned_consultant_user_id IS DISTINCT FROM tca.csc_user_id
+  AND t.status = 'active'
+  AND COALESCE(t.is_system_tenant, false) = false;
+```
+Result: 0 mismatches remaining.
+
+**Note:** `tenant_csc_assignments` is canonical. `tenants.assigned_consultant_user_id` must be kept in sync. A trigger to auto-sync on `tenant_csc_assignments` INSERT/UPDATE/DELETE would prevent future drift — not yet added, flag for future sprint.
+
+### 4B — `v_dashboard_labour_efficiency` stale role list
+
+**Problem:** The view filtered `WHERE u.unicorn_role IN ('Super Admin', 'Team Leader', 'Team Member')` — CSC, BGT, Integrator, CET all excluded. AJ, Sharwari, Samantha, Kelly showed 0 clients. "Avg Clients/CSC" KPI showed 3 instead of ~12.
+
+**Fix (direct SQL — view recreated):** Updated WHERE clause to include all RBAC v5 internal roles:
+```sql
+WHERE u.unicorn_role = ANY (ARRAY[
+  'Super Admin', 'Team Leader', 'Team Member',
+  'Integrator', 'BGT', 'CSC', 'CET'
+])
+```
+Result: Sharwari 18 clients, Samantha 17, AJ 14, Angela 6, Kelly 6. Total = 61 ✓.
+
+### 4C — `useDashboardTriage.ts` lightweight fallback removed
+
+**Problem:** The Phase 2 fix introduced a lightweight `tenants` table query for non-SA "All Clients" view to avoid timeout. After Phase 0 reduced the view to 61 rows (11ms execution), the lightweight branch was no longer needed. Non-SA users saw Score=0/Healthy everywhere instead of real computed metrics.
+
+**Fix (Lovable — deployed):** Removed the branched query entirely. All staff roles now query `v_dashboard_attention_ranked` directly. `savedView` filtering for My Clients / All Clients remains client-side in `filteredTenants`.
+
+### 4D — `LabourEfficiencyPanel.tsx` avgClients denominator bug
+
+**Problem:** `avgClients` divides by `metrics.length` (all internal staff, ~20 rows including those with 0 clients), giving 61/20 ≈ 3. Should divide by active CSCs only.
+
+**Fix (Lovable — pending as at 10 June 2026):**
+```typescript
+// In src/components/dashboard/LabourEfficiencyPanel.tsx
+const activeCscs = metrics.filter(m => Number(m.client_count) > 0).length;
+const avgClients = activeCscs > 0 ? Math.round(totalClients / activeCscs) : 0;
+```
+
+---
+
 ## Open questions
 
-- [ ] Confirm numeric status code mapping for `stage_instances` before Phase 3
-- [ ] Confirm `client_action_items` column names (`status` values, due date column) before Phase 0 Change C
-- [ ] Replace `<SERVICE_ROLE_KEY>` in Phase 1 cron SQL with actual key from Supabase dashboard → Settings → API
-- [ ] After Phase 1 cron jobs run: check whether `run-stage-health-monitor` handles numeric status codes or needs Phase 3 first
+- [x] Confirm numeric status code mapping for `stage_instances` before Phase 3 — confirmed and applied
+- [x] Confirm `client_action_items` column names before Phase 0 Change C — confirmed
+- [x] Replace `<SERVICE_ROLE_KEY>` in Phase 1 cron SQL — done
+- [x] After Phase 1 cron jobs run: check numeric status codes — Phase 3 fixed all
+- [ ] **Future sprint:** Add trigger on `tenant_csc_assignments` to keep `tenants.assigned_consultant_user_id` in sync automatically — prevents Phase 4A recurrence
+- [ ] **Pending Lovable:** `LabourEfficiencyPanel.tsx` avgClients denominator fix (Phase 4D) — prompt drafted, not yet deployed as at 10 June 2026
