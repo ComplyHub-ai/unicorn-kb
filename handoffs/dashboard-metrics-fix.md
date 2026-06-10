@@ -38,7 +38,7 @@ The staff dashboard triage view has three compounding issues:
 | 1 | Add cron jobs for health + forecast | Direct SQL | ✅ Done | Phase 0 deployed |
 | 2 | Frontend: lightweight "All Clients" query | Lovable frontend | ✅ Done | Nothing (parallel with Phase 0) |
 | 3 | Fix stage status value inconsistency | Direct SQL | ✅ Done | Phase 1 run once manually |
-| 4 | CSC data sync + labour efficiency fixes | Direct SQL + Lovable | ✅ Done | Phases 0–3 done |
+| 4 | CSC data sync + labour efficiency fixes | Direct SQL + Lovable | ✅ Done (all 4 sub-items) | Phases 0–3 done |
 
 ---
 
@@ -367,4 +367,4 @@ const avgClients = activeCscs > 0 ? Math.round(totalClients / activeCscs) : 0;
 - [x] Replace `<SERVICE_ROLE_KEY>` in Phase 1 cron SQL — done
 - [x] After Phase 1 cron jobs run: check numeric status codes — Phase 3 fixed all
 - [ ] **Future sprint:** Add trigger on `tenant_csc_assignments` to keep `tenants.assigned_consultant_user_id` in sync automatically — prevents Phase 4A recurrence
-- [ ] **Pending Lovable:** `LabourEfficiencyPanel.tsx` avgClients denominator fix (Phase 4D) — prompt drafted, not yet deployed as at 10 June 2026
+- [x] **`LabourEfficiencyPanel.tsx` avgClients denominator fix** (Phase 4D) — deployed, commit `c9f46f8f` on `origin/main`
