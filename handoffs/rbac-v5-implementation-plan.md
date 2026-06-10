@@ -127,8 +127,8 @@ This table is the single source of truth for valid role values. `users.unicorn_r
 
 | Name | Email | Current | Primary Role | Additional Role |
 |---|---|---|---|---|
-| Angela Connell-Richards | angela@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
-| Dave Richards | dave@vivacity.com.au | Super Admin | **Super Admin** (keep) | — |
+| Angela Connell-Richards | angela@vivacity.com.au | Super Admin | **Super Admin** (keep) | — | Angela is functionally TL but holds SA — SA supersedes TL permissions |
+| Dave Richards | dave@vivacity.com.au | Super Admin | **Super Admin** (keep) | — | Same as Angela — SA kept, TL role unassigned |
 | Nova Canto | nova@vivacity.com.au | Super Admin | **Integrator** | — |
 | Sharwari Rajurkar | Sharwari@vivacity.com.au | Super Admin | **CSC** | — |
 | Kelly Xu | kelly@vivacity.com.au | Super Admin | **CSC** | — |
