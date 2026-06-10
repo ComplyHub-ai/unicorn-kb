@@ -95,18 +95,18 @@ LEFT JOIN LATERAL (
   WHERE tt.tenant_id = t.id
 ) tk ON (true)
 
--- After (reads 23 rows — confirm exact column names before applying):
+-- After (reads 23 rows — column names confirmed):
 LEFT JOIN LATERAL (
-  SELECT count(*) FILTER (WHERE cai.status NOT IN ('complete', 'cancelled')) AS open_count,
-         count(*) FILTER (WHERE cai.status NOT IN ('complete', 'cancelled')
-           AND cai.due_at IS NOT NULL AND cai.due_at < now()) AS overdue_count,
+  SELECT count(*) FILTER (WHERE cai.completed_at IS NULL) AS open_count,
+         count(*) FILTER (WHERE cai.completed_at IS NULL
+           AND cai.due_date IS NOT NULL AND cai.due_date < CURRENT_DATE) AS overdue_count,
          max(cai.updated_at) AS latest_task_at
   FROM client_action_items cai
   WHERE cai.tenant_id = t.id
 ) tk ON (true)
 ```
 
-> ⚠️ **Before implementing Change C:** Verify the exact column names in `client_action_items` — specifically the status column values and whether the due date column is `due_at` or `due_date`. Run `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'client_action_items' ORDER BY ordinal_position` first.
+> ✅ **Column names confirmed:** `due_date` (type date), completion tracked via `completed_at` (NULL = open, non-NULL = done).
 
 **Also fix `v_tenant_last_activity`** — this view calculates `last_activity_at` but reads from `consult_logs` (empty). Add `time_entries` to the GREATEST() calculation:
 
