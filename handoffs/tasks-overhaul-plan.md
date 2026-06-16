@@ -1,6 +1,6 @@
 # Tasks Feature Overhaul — Implementation Plan
 
-> **Created:** 16 June 2026 · **Status:** In Progress (Phase 1 done)
+> **Created:** 16 June 2026 · **Status:** Phases 1–4 complete · Phase 5 deferred
 >
 > Covers the full overhaul of the client portal Tasks feature — unifying stage tasks and action items into a single client-facing model.
 
@@ -37,9 +37,9 @@ The client portal `/client/tasks` page only shows stage tasks. Action items are 
 | Phase | Description | Migration | DB Protocol | Status |
 |---|---|---|---|---|
 | 1 | Stage task release UI | No | No | ✅ Done (16 Jun 2026) |
-| 2 | Schema changes | Yes | Yes | In Progress |
-| 3 | Unified client portal view | No | No | Not started |
-| 4 | Publish flow (RPC + admin UI) | Yes | Yes | Not started |
+| 2 | Schema changes | Yes | Yes | ✅ Done (16 Jun 2026) |
+| 3 | Unified client portal view | No | No | ✅ Done (16 Jun 2026) |
+| 4 | Publish flow (RPC + admin UI) | Yes | Yes | ✅ Done (16 Jun 2026) |
 | 5 | Legacy deprecation | Yes | Yes | Deferred |
 
 ---
@@ -166,6 +166,22 @@ Behaviour:
 
 ---
 
+## Session notes (16 June 2026)
+
+Key findings and deviations discovered during implementation:
+
+- **`tenant_id` / `client_id` on `client_action_items` are both the RTO tenant** — the plan incorrectly assumed `tenant_id` was the Vivacity staff tenant. All existing rows have `tenant_id = client_id::int`. Corrected in Phase 4 audit before the RPC was written.
+- **`item_type` ('internal' | 'client') already existed** as the visibility gate — replaced our planned `is_visible_to_client` boolean. `'client'` = portal-visible.
+- **`assignee_user_id` already existed** from a prior workboard migration — same role as our planned `assigned_to_tenant_user_id`.
+- **Phase 2 Migration 3 comments policy name** — plan had wrong name (`"Comments tenant isolation"`); live DB had `client_action_item_comments_tenant_all`. Handled defensively by dropping both names with `IF EXISTS`.
+- **`CREATE INDEX CONCURRENTLY`** was rejected by Supabase migration runner (transaction-wrapped). Used plain `CREATE INDEX` — acceptable for 23K rows.
+- **`security_invoker=true`** was reset to false by `CREATE OR REPLACE VIEW` in Phase 2. Fixed with `ALTER VIEW … SET (security_invoker=true)` — a security improvement.
+- **Pre-existing bug B1** — `rpc_create_action_item` manually inserts a timeline event AND the `trg_action_item_timeline` trigger fires, producing double timeline events per manual action item create. Flagged in code comment for Phase 5 cleanup.
+- **`audit_events` unusable for Phase 4 audit row** — `entity_id uuid NOT NULL` cannot hold a bigint stage_instance_id. Used `client_audit_log` (text `entity_id`) instead.
+- **Dashboard double-count fix** — `v_client_package_dashboard`, `v_client_package_whats_next`, and `get_client_package_dashboard` all had `AND cti.published_action_item_id IS NULL` added to the CTI subquery (Phase 2 Migration 2). Without this, published tasks would be counted twice.
+
+---
+
 ## Key Files
 
 | File | Relevance |
@@ -173,8 +189,11 @@ Behaviour:
 | `src/pages/ClientTasksPage.tsx` | Client portal tasks UI — rewritten in Phase 3 |
 | `src/hooks/useClientAllTasks.ts` | Data hook — extended in Phase 3 |
 | `src/components/client/ClientActionItemsTab.tsx` | Admin action items UI — updated in Phase 2 (assignee field) |
-| `supabase/migrations/20260107054614_*.sql` | `client_action_items` schema origin |
-| `supabase/migrations/20260502061224_*.sql` | Dashboard views (`v_client_package_dashboard`, `v_client_package_whats_next`) — updated in Phase 4 |
+| `src/components/client/PackageStagesManager.tsx` | Publish + Release/Recall buttons — updated in Phases 1 and 4 |
+| `src/hooks/useStageCounts.ts` | Extended in Phase 4 to expose `publishedClientTasks` count |
+| `supabase/migrations/20260616024214_*.sql` | `rpc_publish_stage_tasks` — Phase 4 RPC |
+| `supabase/migrations/20260616015653_*.sql` | Phase 2 Migration 3 — RLS split + column-guard trigger |
+| `supabase/migrations/20260616014229_*.sql` | Phase 2 Migration 1 — `published_action_item_id` column |
 
 ---
 
