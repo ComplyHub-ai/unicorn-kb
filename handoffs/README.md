@@ -19,6 +19,7 @@
 | Are implementing a production database change via Lovable (migrations, FKs, triggers, RLS, data fixes) | [lovable-production-db-change.md](lovable-production-db-change.md) |
 | Need Codex or Claude to inspect Supabase without write access | [supabase-mcp-read-only.md](supabase-mcp-read-only.md) |
 | Ask Viv crashes or compliance mode is broken ("Something went wrong") | [ask-viv-fix-procedure.md](ask-viv-fix-procedure.md) |
+| Are implementing the client portal Tasks overhaul (stage tasks + action items unification) | [tasks-overhaul-plan.md](tasks-overhaul-plan.md) |
 
 ---
 
