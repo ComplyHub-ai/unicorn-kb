@@ -1,6 +1,6 @@
 # Tasks Feature Overhaul — Implementation Plan
 
-> **Created:** 16 June 2026 · **Status:** Planning
+> **Created:** 16 June 2026 · **Status:** In Progress (Phase 1 done)
 >
 > Covers the full overhaul of the client portal Tasks feature — unifying stage tasks and action items into a single client-facing model.
 
@@ -36,8 +36,8 @@ The client portal `/client/tasks` page only shows stage tasks. Action items are 
 
 | Phase | Description | Migration | DB Protocol | Status |
 |---|---|---|---|---|
-| 1 | Stage task release UI | No | No | Not started |
-| 2 | Schema changes | Yes | Yes | Not started |
+| 1 | Stage task release UI | No | No | ✅ Done (16 Jun 2026) |
+| 2 | Schema changes | Yes | Yes | In Progress |
 | 3 | Unified client portal view | No | No | Not started |
 | 4 | Publish flow (RPC + admin UI) | Yes | Yes | Not started |
 | 5 | Legacy deprecation | Yes | Yes | Deferred |
