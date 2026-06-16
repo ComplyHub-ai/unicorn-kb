@@ -1,6 +1,6 @@
 # Tasks Feature Overhaul — Implementation Plan
 
-> **Created:** 16 June 2026 · **Status:** Phases 1–4 complete · Phase 5 deferred
+> **Created:** 16 June 2026 · **Status:** ✅ Complete (all phases shipped 16 June 2026)
 >
 > Covers the full overhaul of the client portal Tasks feature — unifying stage tasks and action items into a single client-facing model.
 
@@ -40,7 +40,7 @@ The client portal `/client/tasks` page only shows stage tasks. Action items are 
 | 2 | Schema changes | Yes | Yes | ✅ Done (16 Jun 2026) |
 | 3 | Unified client portal view | No | No | ✅ Done (16 Jun 2026) |
 | 4 | Publish flow (RPC + admin UI) | Yes | Yes | ✅ Done (16 Jun 2026) |
-| 5 | Legacy deprecation | Yes | Yes | Deferred |
+| 5 | Legacy deprecation | Yes | Yes | ✅ Done (16 Jun 2026) |
 
 ---
 
@@ -153,16 +153,29 @@ Behaviour:
 
 ---
 
-## Phase 5 — Legacy Deprecation (Deferred)
+## Phase 5 — Legacy Deprecation
 
-**Trigger:** Phase 4 validated in production and all new stage tasks are being published as action items.
+**Trigger:** Phase 4 validated in production.
 
-**What:**
-- Backfill existing released `client_task_instances` into `client_action_items`
-- Remove legacy branch from `useClientAllTasks`
-- Retire `released_client_tasks` column (or leave inert)
+**What shipped:**
+- `package_instance_id bigint NULL REFERENCES package_instances(id)` added to `client_action_items` (FK + partial index)
+- Existing 4 published action items backfilled with `package_instance_id` via CTI join
+- Dashboard views and `get_client_package_dashboard` RPC fixed — now join on `package_instance_id` (not the broken `package_id` template reference)
+- `rpc_publish_stage_tasks` updated to populate `package_instance_id`
+- `rpc_create_action_item` accepts new optional `p_package_instance_id bigint DEFAULT NULL` parameter
+- New staff-gated `rpc_backfill_released_stage_tasks()` — published 127 CTIs across 27 released stages
+- `useClientAllTasks` simplified to action-items-only pipeline (legacy CTI branch removed)
+- `PackageStagesManager` stripped of Release/Recall UI, dialog, and toggle handler
+- `released_client_tasks` column left inert in DB with deprecation COMMENT
+- B1 double-timeline bug fixed — removed manual `client_timeline_events` INSERT from `rpc_create_action_item`; trigger handles it
 
-**Lovable prompt type:** Data backfill — full DB protocol applies including dry-run verification.
+**Phase 6 deferred:**
+- Drop `released_client_tasks` column
+- Drop `package_id` from `rpc_publish_stage_tasks` INSERT (kept for back-compat in Phase 5)
+- Add FK on `client_action_items.package_id` → `packages(id)`
+- Narrow `UnifiedTask.source` union from `'stage_task' | 'action_item'` to `'action_item'` only
+
+**Lovable prompt type:** Full DB protocol applied.
 
 ---
 
@@ -179,6 +192,10 @@ Key findings and deviations discovered during implementation:
 - **Pre-existing bug B1** — `rpc_create_action_item` manually inserts a timeline event AND the `trg_action_item_timeline` trigger fires, producing double timeline events per manual action item create. Flagged in code comment for Phase 5 cleanup.
 - **`audit_events` unusable for Phase 4 audit row** — `entity_id uuid NOT NULL` cannot hold a bigint stage_instance_id. Used `client_audit_log` (text `entity_id`) instead.
 - **Dashboard double-count fix** — `v_client_package_dashboard`, `v_client_package_whats_next`, and `get_client_package_dashboard` all had `AND cti.published_action_item_id IS NULL` added to the CTI subquery (Phase 2 Migration 2). Without this, published tasks would be counted twice.
+- **`package_id` FK mismatch** (Phase 5 finding) — `client_action_items.package_id` had no FK in production (was unconstrained bigint). Dashboard views were comparing template IDs against instance IDs — a silent no-match bug. Fixed in Phase 5 by adding `package_instance_id` and switching dashboard joins.
+- **PL/pgSQL loop variable collision** — `rpc_publish_stage_tasks` declared `cti record` as a PL/pgSQL variable AND used `cti` as both the loop variable and SQL table alias. Fixed by renaming loop variable to `r` and removing the explicit declaration.
+- **`stage_id` FK violation** — initial publish RPC inserted `stage_id` from `stage_instances.stage_id` which references `stages(id)`, but `client_action_items.stage_id` has a FK to `documents_stages(id)`. Fixed by setting `stage_id = NULL` (relationship preserved via `related_entity_id`).
+- **Backfill result** — 127 CTIs across 27 released stages successfully published as action items via `rpc_backfill_released_stage_tasks`.
 
 ---
 
@@ -194,6 +211,7 @@ Key findings and deviations discovered during implementation:
 | `supabase/migrations/20260616024214_*.sql` | `rpc_publish_stage_tasks` — Phase 4 RPC |
 | `supabase/migrations/20260616015653_*.sql` | Phase 2 Migration 3 — RLS split + column-guard trigger |
 | `supabase/migrations/20260616014229_*.sql` | Phase 2 Migration 1 — `published_action_item_id` column |
+| `supabase/migrations/20260616050534_*.sql` | Phase 5 — all migrations A–E bundled (package_instance_id, backfill, RPC updates, dashboard fix, backfill RPC) |
 
 ---
 
