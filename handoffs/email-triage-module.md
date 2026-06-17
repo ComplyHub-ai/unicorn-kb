@@ -1,6 +1,6 @@
 # Email Triage Module — Implementation Plan
 
-> **Created:** 17 June 2026 · **Owner:** Carl Simpao · **Status:** Planning
+> **Created:** 17 June 2026 · **Owner:** Carl Simpao · **Status:** Design decisions confirmed — ready for Prompt 2
 >
 > Source SOP: `email-triage-sop.md` (workspace root)
 > DB change protocol: `handoffs/lovable-production-db-change.md`
@@ -33,44 +33,150 @@ Build a new **Email Triage** module in Unicorn CMS that captures inbound emails 
 
 ---
 
-## Data Model: `email_tickets`
+## Audit Findings & Confirmed Design Decisions
+
+> Audit conducted by Lovable (17 June 2026, read-only). All decisions confirmed by Carl.
+
+### Mandatory corrections applied to DDL
+
+| Item | Original | Corrected |
+|---|---|---|
+| `tenant_id` type | `integer` | `bigint` (matches `tenants.id`) |
+| User FK constraints | No cascade | `ON UPDATE CASCADE ON DELETE SET NULL` on all three (`triaged_by`, `assigned_to_user_id`, `closed_by`) |
+| `tenant_id` FK delete | `ON DELETE CASCADE` | `ON DELETE SET NULL` — preserve ticket history |
+| `updated_at` trigger | New variant | Reuse `public.update_updated_at_column()` |
+
+### Design decisions
+
+| # | Decision | Choice | Rationale |
+|---|---|---|---|
+| 1 | Internal staff roles for RLS | `Super Admin, Team Member, CSC, Integrator, BGT` | `Team Leader` is not a real `unicorn_role`; all listed roles confirmed as internal staff |
+| 2 | Category/status/triage_status fields | `dd_*` lookup tables — no inline CHECK constraints | Project convention; allows label changes without migrations |
+| 3 | `tenant_id` ON DELETE | `SET NULL` | Preserve ticket history when a tenant is deleted |
+| 4 | Edge Function secret header | `x-intake-secret` | Power Automate configured fresh — no existing convention to match |
+| 5 | SLA policy source | `dd_email_ticket_sla` lookup table keyed by `(category, urgent)` | Allows Nova/Angela to adjust SLAs without a migration |
+| 6 | Audit logging | `audit_events` with `entity_type = 'email_ticket'` | Reuse existing infrastructure; dedicated activity table is parking lot |
+| 7 | `closed_by`/`closed_at` consistency | Trigger enforcing `status='closed'` ⟺ `closed_at IS NOT NULL AND closed_by IS NOT NULL` | Data integrity |
+
+### Additional audit findings (apply in build)
+
+- `ticket_number` generation: counter table (`email_ticket_counters(year int PK, last_no int)`) + BEFORE INSERT trigger using UPSERT row lock — concurrency-safe, per-year reset
+- SLA breach: pg_cron job every 5 min (`UPDATE ... SET sla_breached = true WHERE ... AND response_due_at < now()`) + BEFORE INSERT trigger to set `response_due_at` from `dd_email_ticket_sla`
+- Edge Function: `verify_jwt = false`, constant-time secret comparison (`crypto.timingSafeEqual`), `ON CONFLICT (original_email_id) DO NOTHING`, Zod body validation, strip HTML in `body_preview` to ≤2000 chars
+- RLS INSERT: `service_role` only (no authenticated insert path — all inserts via Edge Function)
+- All new functions: `SET search_path = ''`, fully schema-qualified, `REVOKE ALL FROM PUBLIC`, explicit grants
+
+---
+
+## Data Model: `email_tickets` (corrected)
+
+### Lookup tables (create first)
+
+```sql
+-- Categories
+CREATE TABLE public.dd_email_ticket_category (
+  id         integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  value      text    NOT NULL UNIQUE,
+  label      text    NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  active     boolean NOT NULL DEFAULT true
+);
+INSERT INTO public.dd_email_ticket_category (value, label, sort_order) VALUES
+  ('lead',    'Lead',    1),
+  ('client',  'Client',  2),
+  ('tech',    'Tech',    3),
+  ('billing', 'Billing', 4),
+  ('general', 'General', 5);
+
+-- Triage statuses
+CREATE TABLE public.dd_email_ticket_triage_status (
+  id         integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  value      text    NOT NULL UNIQUE,
+  label      text    NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  active     boolean NOT NULL DEFAULT true
+);
+INSERT INTO public.dd_email_ticket_triage_status (value, label, sort_order) VALUES
+  ('untriaged', 'Untriaged', 1),
+  ('triaged',   'Triaged',   2);
+
+-- Statuses
+CREATE TABLE public.dd_email_ticket_status (
+  id         integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  value      text    NOT NULL UNIQUE,
+  label      text    NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  active     boolean NOT NULL DEFAULT true
+);
+INSERT INTO public.dd_email_ticket_status (value, label, sort_order) VALUES
+  ('open',        'Open',        1),
+  ('in_progress', 'In Progress', 2),
+  ('pending',     'Pending',     3),
+  ('closed',      'Closed',      4);
+
+-- SLA policies (keyed by category + urgent flag)
+CREATE TABLE public.dd_email_ticket_sla (
+  id             integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  category       text    NOT NULL,
+  urgent         boolean NOT NULL DEFAULT false,
+  response_hours numeric NOT NULL,
+  active         boolean NOT NULL DEFAULT true,
+  UNIQUE (category, urgent)
+);
+INSERT INTO public.dd_email_ticket_sla (category, urgent, response_hours) VALUES
+  ('lead',    false, 8),
+  ('client',  false, 4),
+  ('tech',    false, 4),
+  ('billing', false, 8),
+  ('general', false, 8),
+  ('lead',    true,  1),
+  ('client',  true,  1),
+  ('tech',    true,  1),
+  ('billing', true,  1),
+  ('general', true,  1);
+
+-- Ticket number counter (per year)
+CREATE TABLE public.email_ticket_counters (
+  year    integer NOT NULL PRIMARY KEY,
+  last_no integer NOT NULL DEFAULT 0
+);
+```
+
+### Main table
 
 ```sql
 CREATE TABLE public.email_tickets (
   id                     uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  ticket_number          text        NOT NULL UNIQUE,  -- VIV-YYYY-NNNN
+  ticket_number          text        NOT NULL UNIQUE,  -- VIV-YYYY-NNNN (set by trigger)
 
   -- External sender (no user account required)
   sender_name            text        NOT NULL,
   sender_email           text        NOT NULL,
 
   -- Optional tenant link (resolved by sender email domain match)
-  tenant_id              integer     NULL REFERENCES public.tenants(id),
+  tenant_id              bigint      NULL REFERENCES public.tenants(id) ON DELETE SET NULL,
 
-  -- SOP category + urgency
-  category               text        NOT NULL DEFAULT 'general'
-                         CHECK (category IN ('lead','client','tech','billing','general')),
+  -- SOP category + urgency (values from dd_* tables, no inline CHECKs)
+  category               text        NOT NULL DEFAULT 'general',
   urgent                 boolean     NOT NULL DEFAULT false,
 
   -- Email content
   subject                text        NOT NULL,
-  body_preview           text        NULL,           -- first ~500 chars of body
+  body_preview           text        NULL,           -- stripped, ≤2000 chars
   original_email_id      text        NULL UNIQUE,   -- Message-ID header (dedup)
 
   -- Triage workflow
-  triage_status          text        NOT NULL DEFAULT 'untriaged'
-                         CHECK (triage_status IN ('untriaged','triaged')),
-  triaged_by             uuid        NULL REFERENCES public.users(user_uuid),
+  triage_status          text        NOT NULL DEFAULT 'untriaged',
+  triaged_by             uuid        NULL REFERENCES public.users(user_uuid) ON UPDATE CASCADE ON DELETE SET NULL,
   triaged_at             timestamptz NULL,
 
   -- Assignment
-  assigned_to_user_id    uuid        NULL REFERENCES public.users(user_uuid),
+  assigned_to_user_id    uuid        NULL REFERENCES public.users(user_uuid) ON UPDATE CASCADE ON DELETE SET NULL,
   assigned_at            timestamptz NULL,
 
   -- Status & SLA
-  status                 text        NOT NULL DEFAULT 'open'
-                         CHECK (status IN ('open','in_progress','pending','closed')),
-  response_due_at        timestamptz NULL,   -- calculated: received_at + category SLA
+  status                 text        NOT NULL DEFAULT 'open',
+  response_due_at        timestamptz NULL,   -- set by BEFORE INSERT trigger from dd_email_ticket_sla
   sla_breached           boolean     NOT NULL DEFAULT false,
 
   -- Acknowledgement
@@ -79,7 +185,7 @@ CREATE TABLE public.email_tickets (
   -- Resolution
   resolution_notes       text        NULL,
   closed_at              timestamptz NULL,
-  closed_by              uuid        NULL REFERENCES public.users(user_uuid),
+  closed_by              uuid        NULL REFERENCES public.users(user_uuid) ON UPDATE CASCADE ON DELETE SET NULL,
 
   -- Timestamps
   received_at            timestamptz NOT NULL DEFAULT now(),
@@ -88,26 +194,27 @@ CREATE TABLE public.email_tickets (
 );
 ```
 
-### SLA Calculation (by category)
+### SLA reference (from `dd_email_ticket_sla` seed data)
 
-| Category | SOP SLA | `response_due_at` offset |
+| Category | Urgent | Response hours |
 |---|---|---|
-| `lead` | Same business day | +8 business hours |
-| `client` | 4 business hours | +4 business hours |
-| `tech` | 4 business hours | +4 business hours |
-| `billing` | Same business day | +8 business hours |
-| `general` | 1 business day | +8 business hours |
-| (any + urgent) | 1 hour | +1 hour (overrides category) |
+| `lead` | false | 8 |
+| `client` | false | 4 |
+| `tech` | false | 4 |
+| `billing` | false | 8 |
+| `general` | false | 8 |
+| any | true | 1 |
 
-### Required DB objects (beyond the table)
+### Required DB objects
 
-- **Sequence / function** for `ticket_number` — format `VIV-` + 4-digit year + `-` + zero-padded counter per year
-- **Trigger** — `updated_at` auto-stamp on row update
-- **Trigger** — SLA breach auto-flag (`sla_breached = true` when `now() > response_due_at AND status NOT IN ('closed')`)
-- **RLS policies:**
-  - Vivacity team (Super Admin, Team Leader, Team Member) — full read/write
-  - No client access (this is purely internal)
-- **Indexes:** `triage_status`, `assigned_to_user_id`, `status`, `received_at`, `category`
+- **`email_ticket_counters`** — counter table for VIV-YYYY-NNNN generation
+- **`fn_email_tickets_set_ticket_number`** — BEFORE INSERT trigger function (counter UPSERT, fully qualified, `SET search_path = ''`)
+- **`fn_email_tickets_set_response_due_at`** — BEFORE INSERT trigger function (reads `dd_email_ticket_sla`, sets `response_due_at`)
+- **`fn_email_tickets_enforce_closed_consistency`** — BEFORE UPDATE trigger (ensures `closed_at`/`closed_by` set when `status='closed'`)
+- **`update_updated_at_column`** — reuse existing, attach to `email_tickets`
+- **pg_cron job** `email_tickets_flag_sla_breaches` — every 5 min, partial index support
+- **RLS policies** — SELECT/UPDATE: internal staff (`unicorn_role IN ('Super Admin','Team Member','CSC','Integrator','BGT')`); INSERT: service_role only; DELETE: Super Admin only
+- **Indexes** — `(triage_status, received_at DESC)`, `(assigned_to_user_id, status, received_at DESC)`, `(status, received_at DESC)`, `(category)`, `(tenant_id) WHERE tenant_id IS NOT NULL`, `(sla_breached) WHERE sla_breached = true`
 
 ---
 
@@ -350,13 +457,13 @@ Once the core module ships, extend `rpc_get_inbox_items` to include assigned `em
 
 | Phase | Status | Notes |
 |---|---|---|
-| Schema design | Complete | See data model above |
-| Power Automate spec | Complete | Pending shared mailbox confirmation |
-| Lovable Prompt 1 (audit) | **Next** | |
-| Design decisions gate | Pending audit | |
-| Lovable Prompt 2 (impl plan) | Not started | |
+| Schema design | Complete | Corrected DDL in plan |
+| Power Automate spec | Complete | Shared mailbox confirmed ✓ |
+| Lovable Prompt 1 (audit) | Complete | Findings reviewed 17 Jun 2026 |
+| Design decisions gate | **Complete** | All 7 decisions confirmed |
+| Lovable Prompt 2 (impl plan) | **Next** | |
 | Phase 1 — Migration | Not started | |
 | Phase 2 — Edge Function | Not started | |
 | Phase 3 — UI | Not started | |
 | Phase 4 — Team Inbox wiring | Not started | |
-| Phase 5 — Power Automate | Not started | Blocked on shared mailbox confirm |
+| Phase 5 — Power Automate | Not started | Shared mailbox confirmed ✓ |
