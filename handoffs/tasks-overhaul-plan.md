@@ -1,6 +1,6 @@
 # Tasks Feature Overhaul — Implementation Plan
 
-> **Created:** 16 June 2026 · **Status:** ✅ Complete (all phases shipped 16 June 2026)
+> **Created:** 16 June 2026 · **Status:** ✅ Complete (Phases 1–7 shipped 16–17 June 2026)
 >
 > Covers the full overhaul of the client portal Tasks feature — unifying stage tasks and action items into a single client-facing model.
 
@@ -175,9 +175,18 @@ Behaviour:
 - `UnifiedTask.source` union narrowed from `'stage_task' | 'action_item'` to `'action_item'`
 - Dead `stage_task` branch and `isActionItem`/`getStatusLabel`/`statuses` plumbing removed from `ClientTasksPage`
 
-**Phase 7 (deferred):**
-- Drop `released_client_tasks` and `released_client_tasks_date` columns from `stage_instances`
-- Requires rewriting CTI branches out of `v_client_package_dashboard`, `v_client_package_whats_next`, `get_client_package_dashboard`, and `v_client_package_stages` — full DB protocol applies
+**Phase 7 (shipped 17 June 2026):**
+- `released_client_tasks` and `released_client_tasks_date` dropped from `stage_instances`
+- `task_instances_agg` CTE removed from `v_client_package_dashboard` and `get_client_package_dashboard`; `tasks_agg` now reads directly from `action_items_agg`
+- CTI UNION ALL branch removed from `v_client_package_whats_next`
+- `released_client_tasks*` columns removed from `v_client_package_stages`
+- `cti_due_upcoming`, `cti_overdue`, `stages_released_recent` CTEs and legs removed from `v_client_home_feed`
+- `stages_released` aggregate and column removed from `v_admin_zero_progress_packages`; `triage_category` pre_release branch simplified to no-completions + no-hours
+- `rpc_backfill_released_stage_tasks()` dropped
+- Frontend: `use-client-package-stages.ts`, `use-admin-zero-progress-packages.ts`, `AdminZeroProgressPackagesPage.tsx` cleaned up
+
+**Remaining follow-up (no phase assigned):**
+- `v_admin_zero_progress_packages.task_counts` still uses `cai.package_id` (template FK) instead of `cai.package_instance_id` — pre-existing mismatch, low priority
 
 **Lovable prompt type:** Full DB protocol applied.
 
@@ -216,6 +225,8 @@ Key findings and deviations discovered during implementation:
 | `supabase/migrations/20260616015653_*.sql` | Phase 2 Migration 3 — RLS split + column-guard trigger |
 | `supabase/migrations/20260616014229_*.sql` | Phase 2 Migration 1 — `published_action_item_id` column |
 | `supabase/migrations/20260616050534_*.sql` | Phase 5 — all migrations A–E bundled (package_instance_id, backfill, RPC updates, dashboard fix, backfill RPC) |
+| `supabase/migrations/20260617015409_*.sql` | Phase 6 — `package_id` FK + remove `package_id` write + TypeScript cleanup |
+| `supabase/migrations/20260617022252_*.sql` | Phase 7 — drop `released_client_tasks*` columns + rewrite 5 views + `get_client_package_dashboard` + drop backfill RPC |
 
 ---
 
