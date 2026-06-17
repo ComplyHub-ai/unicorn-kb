@@ -472,5 +472,5 @@ Once the core module ships, extend `rpc_get_inbox_items` to include assigned `em
 | Phase 1 — Migration | **Complete** | Live 17 Jun 2026 — verified: 7 FKs, 10 indexes, 4 policies, RLS on, 10 SLA rows, cron jobid 16 |
 | Phase 2 — Edge Function | **Complete** | Live 17 Jun 2026 — 405/401/400/201/200-dup all verified. Hotfix: fn_email_tickets_audit ::text cast removed (entity_id is uuid) |
 | Phase 3 — UI | **Complete** | Live 17 Jun 2026 — full triage flow verified end-to-end (realtime, category, urgent, assign, Mark Triaged, SLA recalc, All Tickets) |
-| Phase 4 — Team Inbox wiring | Not started | |
-| Phase 5 — Power Automate | Not started | Shared mailbox confirmed ✓ |
+| Phase 4 — Team Inbox wiring | **Complete** | Live 17 Jun 2026 — ticket in feed (cyan badge, SLA due, unread dot), Tickets filter tab, click → /email-triage?ticket=<id> |
+| Phase 5 — Power Automate | **Next** | Shared mailbox confirmed ✓ |
