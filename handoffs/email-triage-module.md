@@ -469,8 +469,8 @@ Once the core module ships, extend `rpc_get_inbox_items` to include assigned `em
 | Lovable Prompt 1 (audit) | Complete | Findings reviewed 17 Jun 2026 |
 | Design decisions gate | **Complete** | All 7 decisions confirmed |
 | Lovable Prompt 2 (impl plan) | Complete | Received 17 Jun 2026 — 2 corrections flagged (SLA seed + missing RPC step) |
-| Phase 1 — Migration | **Next** | SLA values finalised — Prompt 3 ready |
-| Phase 2 — Edge Function | Not started | |
+| Phase 1 — Migration | **Complete** | Live 17 Jun 2026 — verified: 7 FKs, 10 indexes, 4 policies, RLS on, 10 SLA rows, cron jobid 16 |
+| Phase 2 — Edge Function | **Next** | |
 | Phase 3 — UI | Not started | |
 | Phase 4 — Team Inbox wiring | Not started | |
 | Phase 5 — Power Automate | Not started | Shared mailbox confirmed ✓ |
