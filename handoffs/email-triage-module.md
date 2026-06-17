@@ -210,7 +210,7 @@ CREATE TABLE public.email_tickets (
 | `billing` | true | 60 | 1h — URGENT override |
 | `billing` | false | 480 | 8h (same business day) |
 | `general` | true | 60 | 1h — URGENT override |
-| `general` | false | 480 | 8h (1 business day, simplified to 8 calendar hours) |
+| `general` | false | 1440 | 24h (1 calendar day) |
 
 ### Required DB objects
 
@@ -469,7 +469,7 @@ Once the core module ships, extend `rpc_get_inbox_items` to include assigned `em
 | Lovable Prompt 1 (audit) | Complete | Findings reviewed 17 Jun 2026 |
 | Design decisions gate | **Complete** | All 7 decisions confirmed |
 | Lovable Prompt 2 (impl plan) | Complete | Received 17 Jun 2026 — 2 corrections flagged (SLA seed + missing RPC step) |
-| Phase 1 — Migration | **Next** | Pending Carl approval of corrected SLA values |
+| Phase 1 — Migration | **Next** | SLA values finalised — Prompt 3 ready |
 | Phase 2 — Edge Function | Not started | |
 | Phase 3 — UI | Not started | |
 | Phase 4 — Team Inbox wiring | Not started | |
