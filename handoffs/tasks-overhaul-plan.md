@@ -169,11 +169,15 @@ Behaviour:
 - `released_client_tasks` column left inert in DB with deprecation COMMENT
 - B1 double-timeline bug fixed — removed manual `client_timeline_events` INSERT from `rpc_create_action_item`; trigger handles it
 
-**Phase 6 deferred:**
-- Drop `released_client_tasks` column
-- Drop `package_id` from `rpc_publish_stage_tasks` INSERT (kept for back-compat in Phase 5)
-- Add FK on `client_action_items.package_id` → `packages(id)`
-- Narrow `UnifiedTask.source` union from `'stage_task' | 'action_item'` to `'action_item'` only
+**Phase 6 (partial — shipped 17 June 2026):**
+- `package_id` removed from `rpc_publish_stage_tasks` INSERT — `package_instance_id` is now the sole canonical field
+- FK `client_action_items.package_id → packages(id)` added and validated (`fk_client_action_items_package_template`)
+- `UnifiedTask.source` union narrowed from `'stage_task' | 'action_item'` to `'action_item'`
+- Dead `stage_task` branch and `isActionItem`/`getStatusLabel`/`statuses` plumbing removed from `ClientTasksPage`
+
+**Phase 7 (deferred):**
+- Drop `released_client_tasks` and `released_client_tasks_date` columns from `stage_instances`
+- Requires rewriting CTI branches out of `v_client_package_dashboard`, `v_client_package_whats_next`, `get_client_package_dashboard`, and `v_client_package_stages` — full DB protocol applies
 
 **Lovable prompt type:** Full DB protocol applied.
 
