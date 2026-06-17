@@ -196,14 +196,21 @@ CREATE TABLE public.email_tickets (
 
 ### SLA reference (from `dd_email_ticket_sla` seed data)
 
-| Category | Urgent | Response hours |
-|---|---|---|
-| `lead` | false | 8 |
-| `client` | false | 4 |
-| `tech` | false | 4 |
-| `billing` | false | 8 |
-| `general` | false | 8 |
-| any | true | 1 |
+> Stored as `due_minutes` in the table (not hours). Source of truth for `response_due_at` trigger.
+> Lovable's plan had several values wrong — the table below is the corrected authoritative seed.
+
+| category | urgent | due_minutes | Notes |
+|---|---|---|---|
+| `lead` | true | 60 | 1h — URGENT override |
+| `lead` | false | 480 | 8h (same business day) |
+| `client` | true | 60 | 1h — URGENT override |
+| `client` | false | 240 | 4h |
+| `tech` | true | 60 | 1h — URGENT override |
+| `tech` | false | 240 | 4h |
+| `billing` | true | 60 | 1h — URGENT override |
+| `billing` | false | 480 | 8h (same business day) |
+| `general` | true | 60 | 1h — URGENT override |
+| `general` | false | 480 | 8h (1 business day, simplified to 8 calendar hours) |
 
 ### Required DB objects
 
@@ -461,8 +468,8 @@ Once the core module ships, extend `rpc_get_inbox_items` to include assigned `em
 | Power Automate spec | Complete | Shared mailbox confirmed ✓ |
 | Lovable Prompt 1 (audit) | Complete | Findings reviewed 17 Jun 2026 |
 | Design decisions gate | **Complete** | All 7 decisions confirmed |
-| Lovable Prompt 2 (impl plan) | **Next** | |
-| Phase 1 — Migration | Not started | |
+| Lovable Prompt 2 (impl plan) | Complete | Received 17 Jun 2026 — 2 corrections flagged (SLA seed + missing RPC step) |
+| Phase 1 — Migration | **Next** | Pending Carl approval of corrected SLA values |
 | Phase 2 — Edge Function | Not started | |
 | Phase 3 — UI | Not started | |
 | Phase 4 — Team Inbox wiring | Not started | |
