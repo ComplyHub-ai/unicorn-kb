@@ -471,6 +471,6 @@ Once the core module ships, extend `rpc_get_inbox_items` to include assigned `em
 | Lovable Prompt 2 (impl plan) | Complete | Received 17 Jun 2026 — 2 corrections flagged (SLA seed + missing RPC step) |
 | Phase 1 — Migration | **Complete** | Live 17 Jun 2026 — verified: 7 FKs, 10 indexes, 4 policies, RLS on, 10 SLA rows, cron jobid 16 |
 | Phase 2 — Edge Function | **Complete** | Live 17 Jun 2026 — 405/401/400/201/200-dup all verified. Hotfix: fn_email_tickets_audit ::text cast removed (entity_id is uuid) |
-| Phase 3 — UI | **Complete** | Live 17 Jun 2026 — full triage flow verified end-to-end (realtime, category, urgent, assign, Mark Triaged, SLA recalc, All Tickets) |
+| Phase 3 — UI (Prompts 5 + 6) | **Complete** | Triage flow + TicketDetailPanel. Save (status/notes), Close Ticket (AlertDialog + DB trigger stamps closed_at/by), My Tickets filters closed rows, SLA highlighting on both tabs |
 | Phase 4 — Team Inbox wiring | **Complete** | Live 17 Jun 2026 — ticket in feed (cyan badge, SLA due, unread dot), Tickets filter tab, click → /email-triage?ticket=<id> |
 | Phase 5 — Power Automate | **Next** | Shared mailbox confirmed ✓ |
