@@ -185,8 +185,8 @@ Behaviour:
 - `rpc_backfill_released_stage_tasks()` dropped
 - Frontend: `use-client-package-stages.ts`, `use-admin-zero-progress-packages.ts`, `AdminZeroProgressPackagesPage.tsx` cleaned up
 
-**Remaining follow-up (no phase assigned):**
-- `v_admin_zero_progress_packages.task_counts` still uses `cai.package_id` (template FK) instead of `cai.package_instance_id` — pre-existing mismatch, low priority
+**Follow-up fix (17 June 2026, migration `20260617022819`):**
+- `v_admin_zero_progress_packages.task_counts` CTE updated to use `cai.package_instance_id` — fixes the pre-existing join against the wrong ID space
 
 **Lovable prompt type:** Full DB protocol applied.
 
