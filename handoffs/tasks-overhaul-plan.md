@@ -1,6 +1,6 @@
 # Tasks Feature Overhaul — Implementation Plan
 
-> **Created:** 16 June 2026 · **Status:** Phases 1–4 complete · Phase 5 deferred
+> **Created:** 16 June 2026 · **Status:** ✅ Complete (Phases 1–7 shipped 16–17 June 2026)
 >
 > Covers the full overhaul of the client portal Tasks feature — unifying stage tasks and action items into a single client-facing model.
 
@@ -40,7 +40,7 @@ The client portal `/client/tasks` page only shows stage tasks. Action items are 
 | 2 | Schema changes | Yes | Yes | ✅ Done (16 Jun 2026) |
 | 3 | Unified client portal view | No | No | ✅ Done (16 Jun 2026) |
 | 4 | Publish flow (RPC + admin UI) | Yes | Yes | ✅ Done (16 Jun 2026) |
-| 5 | Legacy deprecation | Yes | Yes | Deferred |
+| 5 | Legacy deprecation | Yes | Yes | ✅ Done (16 Jun 2026) |
 
 ---
 
@@ -153,16 +153,42 @@ Behaviour:
 
 ---
 
-## Phase 5 — Legacy Deprecation (Deferred)
+## Phase 5 — Legacy Deprecation
 
-**Trigger:** Phase 4 validated in production and all new stage tasks are being published as action items.
+**Trigger:** Phase 4 validated in production.
 
-**What:**
-- Backfill existing released `client_task_instances` into `client_action_items`
-- Remove legacy branch from `useClientAllTasks`
-- Retire `released_client_tasks` column (or leave inert)
+**What shipped:**
+- `package_instance_id bigint NULL REFERENCES package_instances(id)` added to `client_action_items` (FK + partial index)
+- Existing 4 published action items backfilled with `package_instance_id` via CTI join
+- Dashboard views and `get_client_package_dashboard` RPC fixed — now join on `package_instance_id` (not the broken `package_id` template reference)
+- `rpc_publish_stage_tasks` updated to populate `package_instance_id`
+- `rpc_create_action_item` accepts new optional `p_package_instance_id bigint DEFAULT NULL` parameter
+- New staff-gated `rpc_backfill_released_stage_tasks()` — published 127 CTIs across 27 released stages
+- `useClientAllTasks` simplified to action-items-only pipeline (legacy CTI branch removed)
+- `PackageStagesManager` stripped of Release/Recall UI, dialog, and toggle handler
+- `released_client_tasks` column left inert in DB with deprecation COMMENT
+- B1 double-timeline bug fixed — removed manual `client_timeline_events` INSERT from `rpc_create_action_item`; trigger handles it
 
-**Lovable prompt type:** Data backfill — full DB protocol applies including dry-run verification.
+**Phase 6 (partial — shipped 17 June 2026):**
+- `package_id` removed from `rpc_publish_stage_tasks` INSERT — `package_instance_id` is now the sole canonical field
+- FK `client_action_items.package_id → packages(id)` added and validated (`fk_client_action_items_package_template`)
+- `UnifiedTask.source` union narrowed from `'stage_task' | 'action_item'` to `'action_item'`
+- Dead `stage_task` branch and `isActionItem`/`getStatusLabel`/`statuses` plumbing removed from `ClientTasksPage`
+
+**Phase 7 (shipped 17 June 2026):**
+- `released_client_tasks` and `released_client_tasks_date` dropped from `stage_instances`
+- `task_instances_agg` CTE removed from `v_client_package_dashboard` and `get_client_package_dashboard`; `tasks_agg` now reads directly from `action_items_agg`
+- CTI UNION ALL branch removed from `v_client_package_whats_next`
+- `released_client_tasks*` columns removed from `v_client_package_stages`
+- `cti_due_upcoming`, `cti_overdue`, `stages_released_recent` CTEs and legs removed from `v_client_home_feed`
+- `stages_released` aggregate and column removed from `v_admin_zero_progress_packages`; `triage_category` pre_release branch simplified to no-completions + no-hours
+- `rpc_backfill_released_stage_tasks()` dropped
+- Frontend: `use-client-package-stages.ts`, `use-admin-zero-progress-packages.ts`, `AdminZeroProgressPackagesPage.tsx` cleaned up
+
+**Follow-up fix (17 June 2026, migration `20260617022819`):**
+- `v_admin_zero_progress_packages.task_counts` CTE updated to use `cai.package_instance_id` — fixes the pre-existing join against the wrong ID space
+
+**Lovable prompt type:** Full DB protocol applied.
 
 ---
 
@@ -179,6 +205,10 @@ Key findings and deviations discovered during implementation:
 - **Pre-existing bug B1** — `rpc_create_action_item` manually inserts a timeline event AND the `trg_action_item_timeline` trigger fires, producing double timeline events per manual action item create. Flagged in code comment for Phase 5 cleanup.
 - **`audit_events` unusable for Phase 4 audit row** — `entity_id uuid NOT NULL` cannot hold a bigint stage_instance_id. Used `client_audit_log` (text `entity_id`) instead.
 - **Dashboard double-count fix** — `v_client_package_dashboard`, `v_client_package_whats_next`, and `get_client_package_dashboard` all had `AND cti.published_action_item_id IS NULL` added to the CTI subquery (Phase 2 Migration 2). Without this, published tasks would be counted twice.
+- **`package_id` FK mismatch** (Phase 5 finding) — `client_action_items.package_id` had no FK in production (was unconstrained bigint). Dashboard views were comparing template IDs against instance IDs — a silent no-match bug. Fixed in Phase 5 by adding `package_instance_id` and switching dashboard joins.
+- **PL/pgSQL loop variable collision** — `rpc_publish_stage_tasks` declared `cti record` as a PL/pgSQL variable AND used `cti` as both the loop variable and SQL table alias. Fixed by renaming loop variable to `r` and removing the explicit declaration.
+- **`stage_id` FK violation** — initial publish RPC inserted `stage_id` from `stage_instances.stage_id` which references `stages(id)`, but `client_action_items.stage_id` has a FK to `documents_stages(id)`. Fixed by setting `stage_id = NULL` (relationship preserved via `related_entity_id`).
+- **Backfill result** — 127 CTIs across 27 released stages successfully published as action items via `rpc_backfill_released_stage_tasks`.
 
 ---
 
@@ -194,6 +224,9 @@ Key findings and deviations discovered during implementation:
 | `supabase/migrations/20260616024214_*.sql` | `rpc_publish_stage_tasks` — Phase 4 RPC |
 | `supabase/migrations/20260616015653_*.sql` | Phase 2 Migration 3 — RLS split + column-guard trigger |
 | `supabase/migrations/20260616014229_*.sql` | Phase 2 Migration 1 — `published_action_item_id` column |
+| `supabase/migrations/20260616050534_*.sql` | Phase 5 — all migrations A–E bundled (package_instance_id, backfill, RPC updates, dashboard fix, backfill RPC) |
+| `supabase/migrations/20260617015409_*.sql` | Phase 6 — `package_id` FK + remove `package_id` write + TypeScript cleanup |
+| `supabase/migrations/20260617022252_*.sql` | Phase 7 — drop `released_client_tasks*` columns + rewrite 5 views + `get_client_package_dashboard` + drop backfill RPC |
 
 ---
 
