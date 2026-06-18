@@ -1,6 +1,6 @@
 # Impersonation Feature Improvements — Implementation Plan
 
-> **Created:** 18 June 2026 · **Status:** ✅ Phases 1–3 complete (18 Jun 2026) · Phase 4 deferred (separate DB-change session)
+> **Created:** 18 June 2026 · **Status:** ✅ All phases complete (18 Jun 2026)
 >
 > Covers improvements to the "View as Client" impersonation feature for the CSC workflow. Fixes the missing user picker in Portal preview mode and adds CSC-focused enhancements.
 
@@ -52,7 +52,7 @@ The infrastructure to support user selection in Portal mode already exists: `act
 | 1 | Portal mode user picker + reason dialog | No | No | ✅ Done (18 Jun 2026) |
 | 2 | Relationship role badges + common reasons presets | No | No | ✅ Done (18 Jun 2026) |
 | 3 | In-session user switcher + session duration indicator | No | No | ✅ Done (18 Jun 2026) |
-| 4 | `acting_user_id` column in audit table | **Yes** | **Yes** | ⬜ Separate session |
+| 4 | `acting_user_id` column in audit table | **Yes** | **Yes** | ✅ Done (18 Jun 2026) |
 
 ---
 
