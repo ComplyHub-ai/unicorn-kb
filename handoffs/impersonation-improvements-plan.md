@@ -50,7 +50,7 @@ The infrastructure to support user selection in Portal mode already exists: `act
 | Phase | Description | Migration | DB Protocol | Status |
 |---|---|---|---|---|
 | 1 | Portal mode user picker + reason dialog | No | No | ✅ Done (18 Jun 2026) |
-| 2 | Relationship role badges + common reasons presets | No | No | ⬜ Not started |
+| 2 | Relationship role badges + common reasons presets | No | No | ✅ Done (18 Jun 2026) |
 | 3 | In-session user switcher + session duration indicator | No | No | ⬜ Not started |
 | 4 | `acting_user_id` column in audit table | **Yes** | **Yes** | ⬜ Separate session |
 
