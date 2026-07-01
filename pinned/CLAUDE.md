@@ -62,9 +62,11 @@ Feature branch naming:
 **`<codebase>/` is Lovable's territory.** If asked to edit codebase files, refuse and offer either
 (a) a Lovable prompt the user can run, or (b) a hotfix flag requiring explicit override.
 
-## Before writing a Lovable prompt (mandatory for data-fetch changes)
+## Before writing a Lovable prompt
 
-Any prompt that touches a Supabase fetch, React Query hook, useState, or pagination MUST follow these steps. Skip none of them.
+For every UI prompt, apply the **design guardrail** from `unicorn-kb/pinned/lovable-prompt-guardrails.md` — include it verbatim. The full guardrail selection reference is in that file.
+
+For any prompt that touches a Supabase fetch, React Query hook, useState, or pagination, also apply the **data-fetch guardrail** below. Skip none of these steps.
 
 **1. Blast-radius check — run this first, before drafting the prompt**
 Ask: what else in the file or codebase reads from or depends on the data this change touches? Identify every consumer (stat cards, filters, load bars, row counts, realtime handlers). If consumers exist, the prompt must account for all of them.
@@ -129,3 +131,4 @@ Open Claude Code at the sub-repo directly (not workspace root). The sub-repo's o
 | `unicorn-kb/handoffs/post-lovable-remix.md` | What to do when `<codebase>` directory name changes |
 | `unicorn-audit/README.md` | Audit repo — authorship split by session type; see Lovable production DB change sessions section in workspace root CLAUDE.md |
 | `unicorn-audit/CLAUDE.md` | Audit-session rituals (takes precedence for unicorn-audit/ sessions) |
+| `unicorn-kb/pinned/lovable-prompt-guardrails.md` | Mandatory guardrail blocks to include in every Lovable prompt (design, data-fetch, DB change) |
