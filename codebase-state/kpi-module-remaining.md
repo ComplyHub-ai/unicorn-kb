@@ -6,6 +6,15 @@
 > **What's missing:** Navigation, email log UI, task system UI, ticket system UI, QA test accounts.
 > **Protocol:** All Lovable prompts must use plan mode ON before approving implementation.
 
+> **⚠ DEPRECATED (confirmed by Carl, 2 July 2026).** Superseded by the
+> "kpi-v2" rebuild — see the deprecation note in `kpi-module.md`.
+> `/my/kpi` and `/admin/kpi-review` (referenced throughout this plan)
+> are both deprecated/dead; the live route is `/kpi` (`KpiPage.tsx`).
+> The remaining-work items below (email log UI, task/ticket system UI,
+> `useKpiAccess` fix) describe the v1 module and should not be picked
+> up as-is without first confirming against current `/kpi` (kpi-v2)
+> behaviour. Retained for historical context only.
+
 ---
 
 ## Current state — what's built vs what's missing

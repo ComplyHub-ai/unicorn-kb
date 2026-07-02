@@ -5,6 +5,24 @@
 > **Spec doc:** UNI-SPEC-KPI-001 v1.0 (approved by Nova and Angela before implementation)
 > **Protocol:** Follows `handoffs/lovable-production-db-change.md`
 
+> **⚠ DEPRECATED (confirmed by Carl, 2 July 2026).** This v1 design
+> (`kpi_email_log`, `kpi_tasks`, `kpi_tickets`, manual Outlook-based
+> logging, served from `/my/kpi` via `MyKpiDashboardPage.tsx`) has been
+> superseded in production by a rebuilt "kpi-v2" system
+> (`src/lib/kpi-v2/`, `src/components/kpi-v2/`), served from a single
+> `/kpi` route (`KpiPage.tsx`) that computes Communication/Retention/Task
+> metrics directly from `tenant_messages` and `tenant_csc_assignments`
+> instead of manually-logged email/task/ticket rows.
+> `/my/kpi` still resolves in `App.tsx` but is deprecated — do not treat
+> it as current. `/admin/kpi-review` (referenced below) is **not wired
+> up as a route at all**; any link to it is dead.
+> No audit entry exists for the v1→v2 rebuild (the
+> `2026-06-23-kpi-module.md` audit entry referenced above does not exist
+> in `unicorn-audit/`), so the cutover is undocumented — flagged as a
+> gap, not yet fixed.
+> This file is retained for historical context only. A full
+> `codebase-state` regeneration describing kpi-v2 is pending.
+
 ---
 
 ## Feature Overview
